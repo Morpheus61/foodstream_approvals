@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="White-Label Payment Approval System - Multi-Tenant SAAS">
+    <meta name="theme-color" content="#1e40af">
+    
+    <title>Payment Approval System</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/images/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/css/custom.css">
+    
+    <style>
+        :root {
+            --primary-color: #1e40af;
+            --secondary-color: #3b82f6;
+            --accent-color: #10b981;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading...</p>
+        </div>
+    </div>
+    
+    <!-- Main App Container -->
+    <div id="root"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- Main Application Script -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // API Base URL
+        const API_BASE = window.location.origin + '/api';
+        
+        // Toast Notification
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `card fade-in ${
+                type === 'success' ? 'border-l-4 border-green-500' :
+                type === 'error' ? 'border-l-4 border-red-500' :
+                'border-l-4 border-blue-500'
+            }`;
+            toast.innerHTML = `<p class="font-medium">${message}</p>`;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // License Activation Component
+        function LicenseActivation({ onActivated }) {
+            const [licenseKey, setLicenseKey] = useState('');
+            const [email, setEmail] = useState('');
+            const [mobile, setMobile] = useState('');
+            const [loading, setLoading] = useState(false);
+            
+            const handleActivate = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                try {
+                    const response = await fetch(`${API_BASE}/onboarding/activate-license`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            licenseKey,
+                            primaryContactEmail: email,
+                            primaryContactMobile: mobile
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('License activated successfully!', 'success');
+                        localStorage.setItem('licenseKey', licenseKey);
+                        onActivated(licenseKey);
+                    } else {
+                        showToast(data.error || 'Activation failed', 'error');
+                    }
+                } catch (error) {
+                    showToast('Network error. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="card max-w-md w-full fade-in">
+                        <h2 className="text-2xl font-bold mb-6 text-center">Activate Your License</h2>
+                        
+                        <form onSubmit={handleActivate} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">License Key</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="PRM-XXXXX-XXXXX-XXXX-XXXX"
+                                    value={licenseKey}
+                                    onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="admin@company.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Mobile</label>
+                                <input
+                                    type="tel"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="+919876543210"
+                                    value={mobile}
+                                    onChange={(e) => setMobile(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                className="btn-primary w-full"
+                                disabled={loading}
+                            >
+                                {loading ? 'Activating...' : 'Activate License'}
+                            </button>
+                        </form>
+                        
+                        <div className="mt-6 text-center text-sm text-gray-600">
+                            <p>Don't have a license key?</p>
+                            <a href="#" className="text-blue-600 hover:underline">Contact Sales</a>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        // Login Component
+        function Login({ onLogin }) {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                try {
+                    const response = await fetch(`${API_BASE}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Login successful!', 'success');
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        onLogin(data.user);
+                    } else {
+                        showToast(data.error || 'Login failed', 'error');
+                    }
+                } catch (error) {
+                    showToast('Network error. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="card max-w-md w-full fade-in">
+                        <h2 className="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
+                        
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Username</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Password</label>
+                                <input
+                                    type="password"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                className="btn-primary w-full"
+                                disabled={loading}
+                            >
+                                {loading ? 'Logging in...' : 'Login'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+        
+        // Main Dashboard
+        function Dashboard({ user, onLogout }) {
+            return (
+                <div className="min-h-screen">
+                    <nav className="bg-white shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <h1 className="text-xl font-bold">Payment Approval System</h1>
+                            <div className="flex items-center space-x-4">
+                                <span className="text-sm text-gray-600">{user.fullName}</span>
+                                <button 
+                                    onClick={onLogout}
+                                    className="text-sm text-blue-600 hover:underline"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+                    
+                    <main className="max-w-7xl mx-auto px-4 py-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="card">
+                                <h3 className="text-lg font-semibold mb-2">Pending Vouchers</h3>
+                                <p className="text-3xl font-bold text-blue-600">0</p>
+                            </div>
+                            
+                            <div className="card">
+                                <h3 className="text-lg font-semibold mb-2">Approved Today</h3>
+                                <p className="text-3xl font-bold text-green-600">0</p>
+                            </div>
+                            
+                            <div className="card">
+                                <h3 className="text-lg font-semibold mb-2">Total Amount</h3>
+                                <p className="text-3xl font-bold text-gray-800">₹0</p>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-8 card">
+                            <h2 className="text-xl font-bold mb-4">Recent Vouchers</h2>
+                            <p className="text-gray-500">No vouchers found</p>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+        
+        // Main App Component
+        function App() {
+            const [licenseActive, setLicenseActive] = useState(false);
+            const [user, setUser] = useState(null);
+            
+            useEffect(() => {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Check for existing license
+                const license = localStorage.getItem('licenseKey');
+                if (license) {
+                    setLicenseActive(true);
+                }
+                
+                // Check for existing user session
+                const token = localStorage.getItem('token');
+                const savedUser = localStorage.getItem('user');
+                if (token && savedUser) {
+                    setUser(JSON.parse(savedUser));
+                }
+            }, []);
+            
+            const handleLogout = () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setUser(null);
+                showToast('Logged out successfully', 'info');
+            };
+            
+            if (!licenseActive) {
+                return <LicenseActivation onActivated={() => setLicenseActive(true)} />;
+            }
+            
+            if (!user) {
+                return <Login onLogin={setUser} />;
+            }
+            
+            return <Dashboard user={user} onLogout={handleLogout} />;
+        }
+        
+        // Render App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

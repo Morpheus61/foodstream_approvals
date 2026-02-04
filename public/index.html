@@ -2,400 +2,959 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="White-Label Payment Approval System - Multi-Tenant SAAS">
-    <meta name="theme-color" content="#1e40af">
-    
-    <title>Payment Approval System</title>
-    
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="/images/icon-192x192.png">
-    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React CDN -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="/css/custom.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodStream Approvals Flow - Secure Payment Approval System</title>
+    <meta name="description" content="Streamline your payment approvals with cryptographically secured vouchers, multi-level approval workflows, and real-time tracking.">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="apple-touch-icon" href="/images/logo.png">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --primary-color: #1e40af;
-            --secondary-color: #3b82f6;
-            --accent-color: #10b981;
+            --primary-blue: #0891b2;
+            --dark-blue: #164e63;
+            --light-blue: #67e8f9;
+            --accent: #06b6d4;
+            --dark: #0f172a;
+            --gray: #64748b;
+            --light-gray: #f1f5f9;
+            --white: #ffffff;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            overflow-x: hidden;
         }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
+
+        /* Header/Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark-blue);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-blue);
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent));
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(8, 145, 178, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #0891b2 0%, #164e63 100%);
+            color: white;
+            padding: 120px 2rem 80px;
+            margin-top: 70px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-content .highlight {
+            color: var(--light-blue);
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary-blue);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            border: 2px solid white;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: var(--primary-blue);
+        }
+
+        .hero-image {
+            position: relative;
+        }
+
+        .hero-image img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 2rem;
+            background: var(--white);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--dark-blue);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--gray);
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(8, 145, 178, 0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(8, 145, 178, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            color: var(--dark-blue);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.8;
+        }
+
+        /* Security Section */
+        .security {
+            padding: 80px 2rem;
+            background: linear-gradient(135deg, var(--light-gray) 0%, #e0f2fe 100%);
+        }
+
+        .security-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .security-content h2 {
+            font-size: 2.5rem;
+            color: var(--dark-blue);
+            margin-bottom: 1.5rem;
+        }
+
+        .security-features {
+            list-style: none;
+            margin-top: 2rem;
+        }
+
+        .security-features li {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(8, 145, 178, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .security-features li:before {
+            content: '✓';
+            background: var(--primary-blue);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .security-image {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .signature-example {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        /* Workflow Section */
+        .workflow {
+            padding: 80px 2rem;
+            background: var(--white);
+        }
+
+        .workflow-steps {
+            max-width: 1000px;
+            margin: 3rem auto 0;
+            position: relative;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent));
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            box-shadow: 0 5px 15px rgba(8, 145, 178, 0.3);
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 0.5rem;
+        }
+
+        .step-content h3 {
+            font-size: 1.5rem;
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-content p {
+            color: var(--gray);
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 80px 2rem;
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
+            color: white;
+        }
+
+        .pricing-grid {
+            max-width: 1200px;
+            margin: 3rem auto 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .pricing-card {
+            background: white;
+            color: var(--dark);
+            padding: 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .pricing-card.featured {
+            background: linear-gradient(135deg, var(--light-blue), var(--accent));
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.08) translateY(-10px);
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .plan-price {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-price span {
+            font-size: 1.25rem;
+            opacity: 0.8;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .plan-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-card.featured .plan-features li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .plan-button {
+            background: var(--primary-blue);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
             font-weight: 600;
             transition: all 0.3s;
         }
-        
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        
-        .card {
+
+        .pricing-card.featured .plan-button {
             background: white;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: var(--primary-blue);
         }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+
+        .plan-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 2rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            color: white;
+            text-align: center;
         }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
         }
-        
+
+        .cta-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-content p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 60px 2rem 30px;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: var(--light-blue);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: var(--light-blue);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-button {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--dark);
+            cursor: pointer;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-button {
+                display: block;
+            }
+
+            .hero-container,
+            .security-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-header h2,
+            .security-content h2,
+            .cta-content h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                text-align: center;
+            }
+        }
+
+        /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.8s ease-out;
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p class="text-gray-600">Loading...</p>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="/images/logo.png" alt="FoodStream Logo" class="logo">
+                <div class="brand-name">FoodStream Approvals Flow</div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#security">Security</a></li>
+                <li><a href="#workflow">Workflow</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+            <a href="/app.html" class="cta-button">Login</a>
+            <button class="mobile-menu-button">☰</button>
         </div>
-    </div>
-    
-    <!-- Main App Container -->
-    <div id="root"></div>
-    
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-    
-    <!-- Main Application Script -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        // API Base URL
-        const API_BASE = window.location.origin + '/api';
-        
-        // Toast Notification
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `card fade-in ${
-                type === 'success' ? 'border-l-4 border-green-500' :
-                type === 'error' ? 'border-l-4 border-red-500' :
-                'border-l-4 border-blue-500'
-            }`;
-            toast.innerHTML = `<p class="font-medium">${message}</p>`;
-            toastContainer.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-        
-        // License Activation Component
-        function LicenseActivation({ onActivated }) {
-            const [licenseKey, setLicenseKey] = useState('');
-            const [email, setEmail] = useState('');
-            const [mobile, setMobile] = useState('');
-            const [loading, setLoading] = useState(false);
-            
-            const handleActivate = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                
-                try {
-                    const response = await fetch(`${API_BASE}/onboarding/activate-license`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            licenseKey,
-                            primaryContactEmail: email,
-                            primaryContactMobile: mobile
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showToast('License activated successfully!', 'success');
-                        localStorage.setItem('licenseKey', licenseKey);
-                        onActivated(licenseKey);
-                    } else {
-                        showToast(data.error || 'Activation failed', 'error');
-                    }
-                } catch (error) {
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="card max-w-md w-full fade-in">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Activate Your License</h2>
-                        
-                        <form onSubmit={handleActivate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">License Key</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="PRM-XXXXX-XXXXX-XXXX-XXXX"
-                                    value={licenseKey}
-                                    onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
-                                    required
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="admin@company.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Mobile</label>
-                                <input
-                                    type="tel"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="+919876543210"
-                                    value={mobile}
-                                    onChange={(e) => setMobile(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <button 
-                                type="submit" 
-                                className="btn-primary w-full"
-                                disabled={loading}
-                            >
-                                {loading ? 'Activating...' : 'Activate License'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-6 text-center text-sm text-gray-600">
-                            <p>Don't have a license key?</p>
-                            <a href="#" className="text-blue-600 hover:underline">Contact Sales</a>
-                        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content animate-in">
+                <h1>Streamline Your <span class="highlight">Payment Approvals</span></h1>
+                <p>Cryptographically secured vouchers with multi-level approval workflows, real-time tracking, and complete audit trails.</p>
+                <div class="hero-buttons">
+                    <a href="#get-started" class="btn-primary">Start Free Trial</a>
+                    <a href="#demo" class="btn-secondary">Watch Demo</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect fill='%23f1f5f9' width='800' height='600'/%3E%3Cg fill='%230891b2' opacity='0.1'%3E%3Ccircle cx='400' cy='300' r='200'/%3E%3C/g%3E%3Ctext x='400' y='300' font-family='Arial' font-size='80' fill='%230891b2' text-anchor='middle'%3E🔐%3C/text%3E%3Ctext x='400' y='380' font-family='Arial' font-size='24' fill='%23164e63' text-anchor='middle'%3ESecure Payment Flow%3C/text%3E%3C/svg%3E" alt="Payment Approval Dashboard">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-header">
+            <h2>Powerful Features for Modern Finance Teams</h2>
+            <p>Everything you need to manage payment approvals efficiently and securely</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Cryptographic Security</h3>
+                <p>Every voucher is digitally signed using HMAC-SHA256, ensuring data integrity and detecting any tampering attempts instantly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✅</div>
+                <h3>Multi-Level Approvals</h3>
+                <p>Configure custom approval workflows with role-based access. Accounts create, admins approve, and payees verify via OTP.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>SMS OTP Verification</h3>
+                <p>Two-factor authentication with SMS OTP ensures only authorized recipients can complete payments. DLT registered and compliant.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Real-Time Dashboard</h3>
+                <p>Track all vouchers, approvals, and payments in real-time. Generate reports by date range, account head, or payment mode.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3>White-Label Ready</h3>
+                <p>Fully customizable with your company branding, logo, colors, and domain. Multi-company support for enterprises.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Professional Printing</h3>
+                <p>Print vouchers with company branding, digital signatures, and QR codes for easy verification. Export to PDF instantly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Complete Audit Trail</h3>
+                <p>Every action is logged with timestamps, user details, and IP addresses. Full compliance with financial regulations.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📲</div>
+                <h3>Progressive Web App</h3>
+                <p>Install on mobile and desktop devices. Works offline with automatic sync when connection is restored.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Multi-Currency Support</h3>
+                <p>Support for multiple currencies including HKD, INR, USD, and more. Automatic currency conversion and display.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section id="security" class="security">
+        <div class="security-container">
+            <div class="security-content">
+                <h2>Bank-Grade Security You Can Trust</h2>
+                <p>Your payment data is protected by enterprise-level security measures that exceed industry standards.</p>
+                <ul class="security-features">
+                    <li><strong>HMAC-SHA256 Digital Signatures</strong> - Every voucher cryptographically signed</li>
+                    <li><strong>AES-256 Encryption</strong> - Data encrypted at rest and in transit</li>
+                    <li><strong>Two-Factor Authentication</strong> - SMS OTP for critical operations</li>
+                    <li><strong>Row-Level Security</strong> - Database policies prevent unauthorized access</li>
+                    <li><strong>Tamper Detection</strong> - Instant alerts on data modification attempts</li>
+                    <li><strong>Audit Logging</strong> - Complete trail of all actions and changes</li>
+                    <li><strong>Rate Limiting</strong> - API protection against brute force attacks</li>
+                    <li><strong>Secure Secrets</strong> - Organization signing keys encrypted and rotatable</li>
+                </ul>
+            </div>
+            <div class="security-image">
+                <div class="signature-example">
+                    <div style="margin-bottom: 1rem; opacity: 0.8;">🔐 Digital Signature (HMAC-SHA256):</div>
+                    <div style="font-size: 0.85rem; line-height: 1.6;">
+                        3f7a9c2e1b5d8f4a6c3e7b2d9f5a1c8e<br>
+                        4b6d3f7a2c9e5b1d8f4a7c3e6b2d9f5a1
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.2); opacity: 0.9;">
+                        <strong>Signed:</strong> 2026-02-04 10:00:00 UTC<br>
+                        <strong>Status:</strong> ✓ VERIFIED & VALID
                     </div>
                 </div>
-            );
-        }
-        
-        // Login Component
-        function Login({ onLogin }) {
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-            const [loading, setLoading] = useState(false);
-            
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                
-                try {
-                    const response = await fetch(`${API_BASE}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showToast('Login successful!', 'success');
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        onLogin(data.user);
-                    } else {
-                        showToast(data.error || 'Login failed', 'error');
-                    }
-                } catch (error) {
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="card max-w-md w-full fade-in">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
-                        
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Username</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Password</label>
-                                <input
-                                    type="password"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <button 
-                                type="submit" 
-                                className="btn-primary w-full"
-                                disabled={loading}
-                            >
-                                {loading ? 'Logging in...' : 'Login'}
-                            </button>
-                        </form>
-                    </div>
+                <p style="text-align: center; margin-top: 1.5rem; color: var(--gray);">
+                    Every voucher is protected with a unique 256-bit cryptographic signature
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section id="workflow" class="workflow">
+        <div class="section-header">
+            <h2>Simple 5-Step Approval Workflow</h2>
+            <p>From creation to payment completion - streamlined for efficiency</p>
+        </div>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Create Voucher</h3>
+                    <p>Accounts team creates payment voucher with payee details, amount, and payment mode. System automatically generates digital signature.</p>
                 </div>
-            );
-        }
-        
-        // Main Dashboard
-        function Dashboard({ user, onLogout }) {
-            return (
-                <div className="min-h-screen">
-                    <nav className="bg-white shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                            <h1 className="text-xl font-bold">Payment Approval System</h1>
-                            <div className="flex items-center space-x-4">
-                                <span className="text-sm text-gray-600">{user.fullName}</span>
-                                <button 
-                                    onClick={onLogout}
-                                    className="text-sm text-blue-600 hover:underline"
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </nav>
-                    
-                    <main className="max-w-7xl mx-auto px-4 py-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Pending Vouchers</h3>
-                                <p className="text-3xl font-bold text-blue-600">0</p>
-                            </div>
-                            
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Approved Today</h3>
-                                <p className="text-3xl font-bold text-green-600">0</p>
-                            </div>
-                            
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Total Amount</h3>
-                                <p className="text-3xl font-bold text-gray-800">₹0</p>
-                            </div>
-                        </div>
-                        
-                        <div className="mt-8 card">
-                            <h2 className="text-xl font-bold mb-4">Recent Vouchers</h2>
-                            <p className="text-gray-500">No vouchers found</p>
-                        </div>
-                    </main>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Review & Approve</h3>
+                    <p>Admin reviews voucher details and verifies signature integrity. Approve or reject with optional comments.</p>
                 </div>
-            );
-        }
-        
-        // Main App Component
-        function App() {
-            const [licenseActive, setLicenseActive] = useState(false);
-            const [user, setUser] = useState(null);
-            
-            useEffect(() => {
-                // Hide loading screen
-                document.getElementById('loading-screen').style.display = 'none';
-                
-                // Check for existing license
-                const license = localStorage.getItem('licenseKey');
-                if (license) {
-                    setLicenseActive(true);
-                }
-                
-                // Check for existing user session
-                const token = localStorage.getItem('token');
-                const savedUser = localStorage.getItem('user');
-                if (token && savedUser) {
-                    setUser(JSON.parse(savedUser));
-                }
-            }, []);
-            
-            const handleLogout = () => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
-                showToast('Logged out successfully', 'info');
-            };
-            
-            if (!licenseActive) {
-                return <LicenseActivation onActivated={() => setLicenseActive(true)} />;
-            }
-            
-            if (!user) {
-                return <Login onLogin={setUser} />;
-            }
-            
-            return <Dashboard user={user} onLogout={handleLogout} />;
-        }
-        
-        // Render App
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-    
-    <!-- Service Worker Registration -->
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Payee OTP Verification</h3>
+                    <p>System sends SMS OTP to registered payee mobile number. Secure two-factor authentication before payment.</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Enter OTP</h3>
+                    <p>Accounts staff enters OTP received by payee. System verifies code and unlocks payment completion.</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Complete Payment</h3>
+                    <p>Payment is marked complete with full audit trail. Print voucher or export to PDF with digital signature.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="section-header" style="color: white;">
+            <h2>Flexible Pricing for Every Business</h2>
+            <p style="color: rgba(255,255,255,0.9);">Choose the plan that fits your needs. All plans include core security features.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="plan-name">Trial</div>
+                <div class="plan-price">HK$ 0 <span>/month</span></div>
+                <p>30 days free trial</p>
+                <ul class="plan-features">
+                    <li>✓ 1 Company</li>
+                    <li>✓ 3 Users</li>
+                    <li>✓ 50 Vouchers/month</li>
+                    <li>✓ 100 SMS Credits</li>
+                    <li>✓ Digital Signatures</li>
+                    <li>✓ Basic Reporting</li>
+                </ul>
+                <a href="#get-started" class="plan-button">Start Free Trial</a>
+            </div>
+
+            <div class="pricing-card">
+                <div class="plan-name">Basic</div>
+                <div class="plan-price">HK$ 720 <span>/month</span></div>
+                <p>Perfect for small teams</p>
+                <ul class="plan-features">
+                    <li>✓ 3 Companies</li>
+                    <li>✓ 10 Users</li>
+                    <li>✓ 500 Vouchers/month</li>
+                    <li>✓ 1,000 SMS Credits</li>
+                    <li>✓ White-Label Branding</li>
+                    <li>✓ Advanced Reporting</li>
+                    <li>✓ Email Support</li>
+                </ul>
+                <a href="#get-started" class="plan-button">Get Started</a>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="plan-name">Premium</div>
+                <div class="plan-price">HK$ 1,920 <span>/month</span></div>
+                <p>Most popular choice</p>
+                <ul class="plan-features">
+                    <li>✓ 10 Companies</li>
+                    <li>✓ 50 Users</li>
+                    <li>✓ 2,000 Vouchers/month</li>
+                    <li>✓ 5,000 SMS Credits</li>
+                    <li>✓ Multi-Currency Support</li>
+                    <li>✓ API Access</li>
+                    <li>✓ Priority Support</li>
+                    <li>✓ Custom Workflows</li>
+                </ul>
+                <a href="#get-started" class="plan-button">Get Started</a>
+            </div>
+
+            <div class="pricing-card">
+                <div class="plan-name">Enterprise</div>
+                <div class="plan-price">Custom</div>
+                <p>For large organizations</p>
+                <ul class="plan-features">
+                    <li>✓ Unlimited Companies</li>
+                    <li>✓ Unlimited Users</li>
+                    <li>✓ Unlimited Vouchers</li>
+                    <li>✓ Unlimited SMS</li>
+                    <li>✓ Dedicated Server</li>
+                    <li>✓ Custom Domain</li>
+                    <li>✓ 24/7 Phone Support</li>
+                    <li>✓ On-Premise Option</li>
+                    <li>✓ Custom Integrations</li>
+                </ul>
+                <a href="#contact" class="plan-button">Contact Sales</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="get-started" class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Transform Your Payment Approvals?</h2>
+            <p>Join hundreds of businesses that trust FoodStream Approvals Flow for secure, efficient payment management.</p>
+            <div class="hero-buttons">
+                <a href="#signup" class="btn-primary">Start Free Trial - No Credit Card Required</a>
+                <a href="#demo" class="btn-secondary">Schedule a Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>FoodStream Approvals Flow</h3>
+                <p>Secure payment approval system with cryptographic signatures and multi-level workflows.</p>
+                <p style="margin-top: 1rem;">© 2026 FoodStream Ltd., Hong Kong</p>
+            </div>
+            <div class="footer-section">
+                <h3>Product</h3>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#security">Security</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#demo">Demo</a></li>
+                    <li><a href="#integrations">Integrations</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="#docs">Documentation</a></li>
+                    <li><a href="#api">API Reference</a></li>
+                    <li><a href="#guides">User Guides</a></li>
+                    <li><a href="#blog">Blog</a></li>
+                    <li><a href="#support">Support Center</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Company</h3>
+                <ul>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#careers">Careers</a></li>
+                    <li><a href="#privacy">Privacy Policy</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Powered by FoodStream Ltd. | All rights reserved. | Built with ❤️ in Hong Kong</p>
+        </div>
+    </footer>
+
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker registration failed'));
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
             });
-        }
+        });
+
+        // Animate elements on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .workflow-step, .pricing-card').forEach(el => {
+            observer.observe(el);
+        });
     </script>
 </body>
 </html>
