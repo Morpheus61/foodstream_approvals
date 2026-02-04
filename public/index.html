@@ -555,14 +555,51 @@
             cursor: pointer;
         }
 
-        /* Responsive Design */
+        /* Responsive Design - Tablet */
+        @media (max-width: 992px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .brand-name {
+                font-size: 1.2rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+        }
+
+        /* Responsive Design - Mobile */
         @media (max-width: 768px) {
+            .navbar {
+                padding: 0.75rem 0;
+            }
+            
             .nav-links {
                 display: none;
             }
 
             .mobile-menu-button {
                 display: block;
+            }
+            
+            .logo {
+                height: 40px;
+            }
+            
+            .brand-name {
+                font-size: 1rem;
+            }
+            
+            .cta-button {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+
+            .hero {
+                padding: 100px 1rem 60px;
+                margin-top: 60px;
             }
 
             .hero-container,
@@ -572,13 +609,23 @@
             }
 
             .hero-content h1 {
-                font-size: 2.5rem;
+                font-size: 1.75rem;
+                margin-bottom: 1rem;
+            }
+            
+            .hero-content p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
             }
 
             .section-header h2,
             .security-content h2,
             .cta-content h2 {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+            
+            .section-header p {
+                font-size: 1rem;
             }
 
             .features-grid {
@@ -587,6 +634,7 @@
 
             .pricing-grid {
                 grid-template-columns: 1fr;
+                padding: 0 1rem;
             }
 
             .pricing-card.featured {
@@ -595,11 +643,131 @@
 
             .hero-buttons {
                 flex-direction: column;
+                gap: 0.75rem;
             }
 
             .btn-primary,
             .btn-secondary {
                 text-align: center;
+                padding: 0.875rem 1.5rem;
+                font-size: 0.9rem;
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .plan-button {
+                padding: 0.875rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .features, .security, .workflow, .pricing {
+                padding: 50px 1rem;
+            }
+            
+            .section-header {
+                margin-bottom: 2rem;
+            }
+            
+            .feature-card {
+                padding: 1.5rem;
+            }
+            
+            .feature-icon {
+                font-size: 2.5rem;
+            }
+            
+            .feature-card h3 {
+                font-size: 1.25rem;
+            }
+            
+            .feature-card p {
+                font-size: 0.9rem;
+            }
+            
+            .workflow-step {
+                gap: 1rem;
+            }
+            
+            .step-number {
+                width: 45px;
+                height: 45px;
+                font-size: 1.25rem;
+            }
+            
+            .step-content h3 {
+                font-size: 1.2rem;
+            }
+            
+            .step-content p {
+                font-size: 0.9rem;
+            }
+            
+            .pricing-card {
+                padding: 1.5rem;
+            }
+            
+            .plan-name {
+                font-size: 1.25rem;
+            }
+            
+            .plan-price {
+                font-size: 2rem;
+            }
+            
+            .plan-features li {
+                font-size: 0.9rem;
+                padding: 0.5rem 0;
+            }
+            
+            .cta-section {
+                padding: 50px 1rem;
+            }
+            
+            .cta-content p {
+                font-size: 1rem;
+            }
+            
+            .footer {
+                padding: 40px 1rem 20px;
+            }
+            
+            .footer-container {
+                gap: 2rem;
+            }
+            
+            .security-features li {
+                font-size: 0.9rem;
+                padding: 0.75rem 0;
+            }
+            
+            .signature-example {
+                padding: 1.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .hero-image {
+                display: none;
+            }
+        }
+        
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .hero-content h1 {
+                font-size: 1.5rem;
+            }
+            
+            .brand-name {
+                font-size: 0.9rem;
+            }
+            
+            .logo {
+                height: 35px;
+            }
+            
+            .section-header h2,
+            .security-content h2,
+            .cta-content h2 {
+                font-size: 1.3rem;
             }
         }
 
@@ -646,8 +814,8 @@
                 <h1>Streamline Your <span class="highlight">Payment Approvals</span></h1>
                 <p>Cryptographically secured vouchers with multi-level approval workflows, real-time tracking, and complete audit trails.</p>
                 <div class="hero-buttons">
-                    <a href="#get-started" class="btn-primary">Start Free Trial</a>
-                    <a href="#demo" class="btn-secondary">Watch Demo</a>
+                    <a href="/app.html" class="btn-primary">Start Free Trial</a>
+                    <a href="mailto:sales@foodstream.com.hk?subject=Demo%20Request" class="btn-secondary">Request Demo</a>
                 </div>
             </div>
             <div class="hero-image">
@@ -811,7 +979,7 @@
                     <li>✓ Digital Signatures</li>
                     <li>✓ Basic Reporting</li>
                 </ul>
-                <a href="#get-started" class="plan-button">Start Free Trial</a>
+                <a href="/app.html" class="plan-button">Start Free Trial</a>
             </div>
 
             <div class="pricing-card">
@@ -827,7 +995,7 @@
                     <li>✓ Advanced Reporting</li>
                     <li>✓ Email Support</li>
                 </ul>
-                <a href="#get-started" class="plan-button">Get Started</a>
+                <a href="/app.html" class="plan-button">Get Started</a>
             </div>
 
             <div class="pricing-card featured">
@@ -844,7 +1012,7 @@
                     <li>✓ Priority Support</li>
                     <li>✓ Custom Workflows</li>
                 </ul>
-                <a href="#get-started" class="plan-button">Get Started</a>
+                <a href="/app.html" class="plan-button">Get Started</a>
             </div>
 
             <div class="pricing-card">
@@ -862,7 +1030,7 @@
                     <li>✓ On-Premise Option</li>
                     <li>✓ Custom Integrations</li>
                 </ul>
-                <a href="#contact" class="plan-button">Contact Sales</a>
+                <a href="mailto:sales@foodstream.com.hk?subject=Enterprise%20Plan%20Inquiry" class="plan-button">Contact Sales</a>
             </div>
         </div>
     </section>
@@ -873,8 +1041,8 @@
             <h2>Ready to Transform Your Payment Approvals?</h2>
             <p>Join hundreds of businesses that trust FoodStream Approvals Flow for secure, efficient payment management.</p>
             <div class="hero-buttons">
-                <a href="#signup" class="btn-primary">Start Free Trial - No Credit Card Required</a>
-                <a href="#demo" class="btn-secondary">Schedule a Demo</a>
+                <a href="/app.html" class="btn-primary">Start Free Trial - No Credit Card Required</a>
+                <a href="mailto:sales@foodstream.com.hk?subject=Demo%20Request" class="btn-secondary">Schedule a Demo</a>
             </div>
         </div>
     </section>
