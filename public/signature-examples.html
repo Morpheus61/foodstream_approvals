@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodStream - Digital Signature Examples</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .voucher-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .voucher {
+            background: white;
+            border: 2px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .voucher-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-info h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .company-info p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.5rem;
+        }
+
+        .voucher-title {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .voucher-title h3 {
+            color: #333;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .voucher-number {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .voucher-body {
+            padding: 20px;
+        }
+
+        .field {
+            margin-bottom: 15px;
+            display: flex;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .field-label {
+            font-weight: bold;
+            color: #666;
+            width: 150px;
+        }
+
+        .field-value {
+            color: #333;
+            flex: 1;
+        }
+
+        .signature-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            border: 2px dashed #667eea;
+        }
+
+        .signature-section h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .signature-section h4::before {
+            content: '🔐';
+            font-size: 1.5rem;
+        }
+
+        .signature-hash {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            color: #333;
+            border: 1px solid #dee2e6;
+            line-height: 1.6;
+        }
+
+        .signature-meta {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .status-valid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-invalid {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .qr-code {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .qr-placeholder {
+            width: 120px;
+            height: 120px;
+            margin: 10px auto;
+            background: 
+                linear-gradient(white 0.5px, transparent 0.5px),
+                linear-gradient(90deg, white 0.5px, transparent 0.5px),
+                #333;
+            background-size: 8px 8px;
+            border: 2px solid #333;
+        }
+
+        .info-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .info-box h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 FoodStream Digital Signature System</h1>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <h2>What is a Digital Signature?</h2>
+            <p>Every voucher in the FoodStream Payment Approval System is cryptographically signed using <strong>HMAC-SHA256</strong> algorithm. This creates a unique 64-character hexadecimal "fingerprint" that ensures:</p>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>✓ Data Integrity</h3>
+                    <p>Any modification to voucher data (amount, payee, date) will invalidate the signature, making tampering immediately detectable.</p>
+                </div>
+                <div class="info-card">
+                    <h3>✓ Authenticity</h3>
+                    <p>Only authorized systems with the organization's secret key can generate valid signatures.</p>
+                </div>
+                <div class="info-card">
+                    <h3>✓ Non-repudiation</h3>
+                    <p>Timestamped signatures provide proof of when the voucher was created and by whom.</p>
+                </div>
+                <div class="info-card">
+                    <h3>✓ Audit Trail</h3>
+                    <p>Every verification attempt is logged for compliance and security monitoring.</p>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px; color: #333;">How It Works</h3>
+            <p><strong>Generation:</strong> When a voucher is created, critical data (voucher number, amount, payee, date, etc.) is combined into a canonical string and hashed using HMAC-SHA256 with the organization's secret key.</p>
+            <p style="margin-top: 10px;"><strong>Verification:</strong> To verify, the system re-computes the signature from current voucher data. If it matches the stored signature, the voucher is untampered. If not, tampering is detected.</p>
+        </div>
+
+        <h2 style="color: white; text-align: center; margin-bottom: 20px;">Example Vouchers with Digital Signatures</h2>
+
+        <!-- Voucher Examples -->
+        <div class="voucher-examples">
+            <!-- Valid Voucher -->
+            <div class="voucher">
+                <div class="voucher-header">
+                    <div class="company-info">
+                        <h2>Relish Foods Pvt Ltd</h2>
+                        <p>Kanyakumari, Tamil Nadu</p>
+                        <p>GST: 33AAACR7749E2ZD</p>
+                    </div>
+                    <div class="logo">RF</div>
+                </div>
+
+                <div class="voucher-title">
+                    <h3>PAYMENT VOUCHER</h3>
+                    <div class="voucher-number">No: VCH-2024-25-00123 | Date: 28 Jan 2024</div>
+                </div>
+
+                <div class="voucher-body">
+                    <div class="field">
+                        <div class="field-label">Pay To:</div>
+                        <div class="field-value">ABC Suppliers Pvt Ltd</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Amount:</div>
+                        <div class="field-value"><strong>HK$ 25,000.00</strong></div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Payment Mode:</div>
+                        <div class="field-value">Account Transfer</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Account Head:</div>
+                        <div class="field-value">Raw Materials</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Description:</div>
+                        <div class="field-value">Purchase of raw materials for Q1 2024 production</div>
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <h4>Digital Signature (HMAC-SHA256)</h4>
+                    <div class="signature-hash">
+                        3f7a9c2e1b5d8f4a6c3e7b2d9f5a1c8e
+                        4b6d3f7a2c9e5b1d8f4a7c3e6b2d9f5a1
+                    </div>
+                    <div class="signature-meta">
+                        <strong>Signed:</strong> 2024-01-28 10:00:00 UTC<br>
+                        <strong>Algorithm:</strong> HMAC-SHA256<br>
+                        <strong>Signature Age:</strong> 2 hours
+                    </div>
+                    <div class="status-badge status-valid">
+                        ✓ VERIFIED & VALID
+                    </div>
+
+                    <div class="qr-code">
+                        <div class="qr-placeholder"></div>
+                        <p style="font-size: 0.85rem; color: #666;">
+                            Scan to verify online<br>
+                            <code>verify.foodstream.com/VCH-2024-25-00123</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tampered Voucher -->
+            <div class="voucher">
+                <div class="voucher-header">
+                    <div class="company-info">
+                        <h2>Relish Hao Hao Chi Foods</h2>
+                        <p>Alappuzha, Kerala</p>
+                        <p>GST: 32AAUFR0742E1ZB</p>
+                    </div>
+                    <div class="logo">RH</div>
+                </div>
+
+                <div class="voucher-title">
+                    <h3>PAYMENT VOUCHER</h3>
+                    <div class="voucher-number">No: VCH-2024-25-00124 | Date: 28 Jan 2024</div>
+                </div>
+
+                <div class="voucher-body">
+                    <div class="field">
+                        <div class="field-label">Pay To:</div>
+                        <div class="field-value">XYZ Trading Co.</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Amount:</div>
+                        <div class="field-value"><strong style="color: #e74c3c;">HK$ 50,000.00</strong> <small style="color: #999;">(Modified from HK$ 15,000.00)</small></div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Payment Mode:</div>
+                        <div class="field-value">UPI</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Account Head:</div>
+                        <div class="field-value">Marketing</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Description:</div>
+                        <div class="field-value">Marketing campaign payment</div>
+                    </div>
+                </div>
+
+                <div class="signature-section" style="border-color: #e74c3c;">
+                    <h4 style="color: #e74c3c;">⚠️ Digital Signature (TAMPERED)</h4>
+                    <div class="signature-hash" style="border-color: #e74c3c;">
+                        a7f3c2e9b8d1f4a6c3e8b2d5f1a9c7e4
+                        b3d6f2a8c5e1b9d4f7a3c6e2b8d5f1a4
+                    </div>
+                    <div class="signature-meta">
+                        <strong>Original Signature:</strong> a7f3c2e9b8d1f4a6...<br>
+                        <strong>Computed Signature:</strong> <span style="color: #e74c3c;">8a4c6e2b9f5d1a7c...</span> (MISMATCH)<br>
+                        <strong>Signed:</strong> 2024-01-28 09:30:00 UTC<br>
+                        <strong>Verified:</strong> 2024-01-28 12:00:00 UTC
+                    </div>
+                    <div class="status-badge status-invalid">
+                        ✗ SIGNATURE INVALID - TAMPERING DETECTED
+                    </div>
+
+                    <div style="background: #fff3cd; padding: 15px; margin-top: 15px; border-radius: 5px; border: 1px solid #ffc107;">
+                        <strong style="color: #856404;">⚠️ Security Alert</strong>
+                        <p style="color: #856404; margin-top: 8px; font-size: 0.9rem;">
+                            This voucher's data has been modified after signing. The amount was changed from HK$ 15,000.00 to HK$ 50,000.00. Payment has been automatically rejected and administrators have been notified.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="info-box">
+            <h2>Technical Specifications</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Algorithm</strong></td>
+                        <td><code>HMAC-SHA256</code></td>
+                        <td>Industry-standard cryptographic hash function</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Signature Length</strong></td>
+                        <td><code>64 characters</code></td>
+                        <td>Hexadecimal representation (256 bits)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Secret Key</strong></td>
+                        <td><code>32+ characters</code></td>
+                        <td>Unique per organization, AES-256 encrypted at rest</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payload</strong></td>
+                        <td><code>Canonical string</code></td>
+                        <td>Voucher number, amount, payee, dates, etc.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verification</strong></td>
+                        <td><code>Constant-time</code></td>
+                        <td>Prevents timing attacks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Audit Trail</strong></td>
+                        <td><code>Every verification</code></td>
+                        <td>Logged with timestamp, user, IP, and result</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 30px; color: #333;">Sample Signature Payload</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; font-family: 'Courier New', monospace; overflow-x: auto;">
+                <div style="color: #999; margin-bottom: 10px;">// Canonical String Format</div>
+                <div style="color: #333;">
+                    VCH-2024-25-00123|c1a2b3|o4d5e6|p7f8g9|25000.00|Account Transfer|Raw Materials|2024-01-28T10:00:00.000Z|usr_001
+                </div>
+                <div style="color: #999; margin-top: 15px; margin-bottom: 10px;">// HMAC-SHA256 with Org Secret</div>
+                <div style="color: #667eea;">
+                    HMAC-SHA256(canonical_string, org_secret_key)<br>
+                    ⇩<br>
+                    3f7a9c2e1b5d8f4a6c3e7b2d9f5a1c8e4b6d3f7a2c9e5b1d8f4a7c3e6b2d9f5a1
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px; color: #333;">API Endpoints</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <p><strong>POST</strong> <code>/api/signatures/verify/:voucherId</code><br>
+                <span style="color: #666;">Verify a voucher's digital signature (with logging)</span></p>
+
+                <p style="margin-top: 15px;"><strong>GET</strong> <code>/api/signatures/status/:voucherId</code><br>
+                <span style="color: #666;">Quick status check (public, for QR codes, no logging)</span></p>
+
+                <p style="margin-top: 15px;"><strong>GET</strong> <code>/api/signatures/history/:voucherId</code><br>
+                <span style="color: #666;">View verification history for a voucher</span></p>
+
+                <p style="margin-top: 15px;"><strong>POST</strong> <code>/api/signatures/batch-verify</code><br>
+                <span style="color: #666;">Batch verify multiple vouchers (Admin only)</span></p>
+
+                <p style="margin-top: 15px;"><strong>POST</strong> <code>/api/signatures/rotate-secret</code><br>
+                <span style="color: #666;">Rotate organization signing secret (Admin only)</span></p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; color: white; margin-top: 40px; padding: 20px;">
+            <p style="font-size: 1.2rem; margin-bottom: 10px;">🔐 <strong>FoodStream Ltd.</strong> - Secure Payment Approval System</p>
+            <p style="opacity: 0.8;">Cryptographically Signed Vouchers • Tamper-Proof • Audit Trail</p>
+            <p style="opacity: 0.6; margin-top: 10px; font-size: 0.9rem;">Documentation Version 2.0.1 | Last Updated: January 28, 2024</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Management - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">💰 Pricing Management</h1>
+                    <a href="/admin" class="text-blue-600 hover:underline">← Back to Admin</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button class="tab-btn active" data-tab="plans">
+                        Pricing Plans
+                    </button>
+                    <button class="tab-btn" data-tab="addons">
+                        Add-ons
+                    </button>
+                    <button class="tab-btn" data-tab="bulk">
+                        Bulk Operations
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Pricing Plans Tab -->
+            <div id="plans-tab" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Pricing Plans</h2>
+                    <button onclick="openPlanModal()" class="btn-primary">
+                        + Add New Plan
+                    </button>
+                </div>
+
+                <div id="plans-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Plans will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Add-ons Tab -->
+            <div id="addons-tab" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Add-ons</h2>
+                    <button onclick="openAddonModal()" class="btn-primary">
+                        + Add New Add-on
+                    </button>
+                </div>
+
+                <div id="addons-list">
+                    <!-- Add-ons will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Bulk Operations Tab -->
+            <div id="bulk-tab" class="tab-content hidden">
+                <div class="card max-w-2xl">
+                    <h2 class="text-xl font-semibold mb-6">Bulk Currency Conversion</h2>
+                    
+                    <form id="bulk-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Target Currency</label>
+                            <select id="bulk-currency" class="input-field">
+                                <option value="HKD">Hong Kong Dollar (HKD)</option>
+                                <option value="USD">US Dollar (USD)</option>
+                                <option value="EUR">Euro (EUR)</option>
+                                <option value="GBP">British Pound (GBP)</option>
+                                <option value="SGD">Singapore Dollar (SGD)</option>
+                                <option value="CNY">Chinese Yuan (CNY)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Conversion Multiplier</label>
+                            <input type="number" id="bulk-multiplier" class="input-field" step="0.01" placeholder="1.00">
+                            <p class="text-xs text-gray-500 mt-1">
+                                Example: To convert from HKD to USD, use 0.128 (1 HKD = 0.128 USD)
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded p-4">
+                            <p class="text-sm text-yellow-800">
+                                ⚠️ <strong>Warning:</strong> This will update ALL pricing plans and add-ons. This action cannot be undone.
+                            </p>
+                        </div>
+
+                        <button type="submit" class="btn-primary">
+                            Apply Conversion
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plan Modal -->
+    <div id="plan-modal" class="modal hidden">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="plan-modal-title">Add New Plan</h3>
+                <button onclick="closePlanModal()" class="text-gray-500 hover:text-gray-700">×</button>
+            </div>
+
+            <form id="plan-form" class="space-y-4">
+                <input type="hidden" id="plan-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Plan Code</label>
+                        <input type="text" id="plan-code" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Plan Name</label>
+                        <input type="text" id="plan-name" class="input-field" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="plan-description" class="input-field" rows="2"></textarea>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Monthly Price</label>
+                        <input type="number" id="plan-price-monthly" class="input-field" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Annual Price</label>
+                        <input type="number" id="plan-price-annual" class="input-field" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Currency</label>
+                        <select id="plan-currency" class="input-field">
+                            <option value="HKD">HKD</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Companies</label>
+                        <input type="number" id="plan-companies" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Users</label>
+                        <input type="number" id="plan-users" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Vouchers/mo</label>
+                        <input type="number" id="plan-vouchers" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">SMS Credits</label>
+                        <input type="number" id="plan-sms" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="plan-visible" class="mr-2" checked>
+                        <span class="text-sm">Visible</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="plan-featured" class="mr-2">
+                        <span class="text-sm">Featured</span>
+                    </label>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="btn-primary flex-1">Save Plan</button>
+                    <button type="button" onclick="closePlanModal()" class="btn-secondary flex-1">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #4b5563;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .tab-btn {
+            padding: 1rem 0;
+            border-bottom: 2px solid transparent;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .plan-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .plan-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+    </style>
+
+    <script>
+        const API_BASE = '/api/pricing';
+        const token = localStorage.getItem('token');
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(`${tab}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // Load pricing plans
+        async function loadPlans() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/plans`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                const container = document.getElementById('plans-list');
+                container.innerHTML = data.plans.map(plan => `
+                    <div class="plan-card">
+                        <h3 class="text-lg font-bold mb-2">${plan.plan_name}</h3>
+                        <p class="text-sm text-gray-600 mb-4">${plan.plan_description || ''}</p>
+                        <div class="text-2xl font-bold mb-4">
+                            ${plan.price_monthly > 0 ? `${plan.currency} $${plan.price_monthly}/mo` : 'Free'}
+                        </div>
+                        <div class="text-sm space-y-1 mb-4">
+                            <div>Companies: ${plan.max_companies === -1 ? 'Unlimited' : plan.max_companies}</div>
+                            <div>Users: ${plan.max_users === -1 ? 'Unlimited' : plan.max_users}</div>
+                            <div>Vouchers: ${plan.max_vouchers_per_month === -1 ? 'Unlimited' : plan.max_vouchers_per_month}/mo</div>
+                            <div>SMS: ${plan.sms_credits === -1 ? 'Unlimited' : plan.sms_credits}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick='editPlan(${JSON.stringify(plan)})' class="btn-secondary text-sm flex-1">Edit</button>
+                            <button onclick="deletePlan('${plan.id}')" class="text-red-600 text-sm">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load plans:', error);
+            }
+        }
+
+        // Plan modal functions
+        function openPlanModal() {
+            document.getElementById('plan-modal').classList.remove('hidden');
+            document.getElementById('plan-form').reset();
+            document.getElementById('plan-modal-title').textContent = 'Add New Plan';
+        }
+
+        function closePlanModal() {
+            document.getElementById('plan-modal').classList.add('hidden');
+        }
+
+        function editPlan(plan) {
+            document.getElementById('plan-id').value = plan.id;
+            document.getElementById('plan-code').value = plan.plan_code;
+            document.getElementById('plan-name').value = plan.plan_name;
+            document.getElementById('plan-description').value = plan.plan_description || '';
+            document.getElementById('plan-price-monthly').value = plan.price_monthly;
+            document.getElementById('plan-price-annual').value = plan.price_annual;
+            document.getElementById('plan-currency').value = plan.currency;
+            document.getElementById('plan-companies').value = plan.max_companies;
+            document.getElementById('plan-users').value = plan.max_users;
+            document.getElementById('plan-vouchers').value = plan.max_vouchers_per_month;
+            document.getElementById('plan-sms').value = plan.sms_credits;
+            document.getElementById('plan-visible').checked = plan.is_visible;
+            document.getElementById('plan-featured').checked = plan.is_featured;
+            
+            document.getElementById('plan-modal-title').textContent = 'Edit Plan';
+            document.getElementById('plan-modal').classList.remove('hidden');
+        }
+
+        // Save plan
+        document.getElementById('plan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const planId = document.getElementById('plan-id').value;
+            const planData = {
+                plan_code: document.getElementById('plan-code').value,
+                plan_name: document.getElementById('plan-name').value,
+                plan_description: document.getElementById('plan-description').value,
+                price_monthly: parseFloat(document.getElementById('plan-price-monthly').value),
+                price_annual: parseFloat(document.getElementById('plan-price-annual').value),
+                currency: document.getElementById('plan-currency').value,
+                max_companies: parseInt(document.getElementById('plan-companies').value),
+                max_users: parseInt(document.getElementById('plan-users').value),
+                max_vouchers_per_month: parseInt(document.getElementById('plan-vouchers').value),
+                sms_credits: parseInt(document.getElementById('plan-sms').value),
+                is_visible: document.getElementById('plan-visible').checked,
+                is_featured: document.getElementById('plan-featured').checked
+            };
+            
+            try {
+                const url = planId ? `${API_BASE}/admin/plans/${planId}` : `${API_BASE}/admin/plans`;
+                const method = planId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(planData)
+                });
+                
+                if (response.ok) {
+                    alert('Plan saved successfully!');
+                    closePlanModal();
+                    loadPlans();
+                } else {
+                    alert('Failed to save plan');
+                }
+            } catch (error) {
+                console.error('Error saving plan:', error);
+                alert('Error saving plan');
+            }
+        });
+
+        // Bulk conversion
+        document.getElementById('bulk-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!confirm('Are you sure? This will update ALL pricing!')) return;
+            
+            const data = {
+                operation: 'currency_conversion',
+                currency: document.getElementById('bulk-currency').value,
+                multiplier: parseFloat(document.getElementById('bulk-multiplier').value)
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/bulk-update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Bulk update completed!');
+                    loadPlans();
+                } else {
+                    alert('Bulk update failed');
+                }
+            } catch (error) {
+                console.error('Bulk update error:', error);
+                alert('Bulk update error');
+            }
+        });
+
+        // Initialize
+        loadPlans();
+    </script>
+</body>
+</html>
