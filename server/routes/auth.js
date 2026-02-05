@@ -65,18 +65,17 @@ router.post('/login', authLimiter, async (req, res) => {
         
         const supabase = getSupabaseClient();
         
-        // Use left join (licensed_orgs) instead of inner join (licensed_orgs!org_id)
-        // This ensures users without an org can still log in (e.g., super_admin)
+        // Simple query without join first
         const { data: user, error } = await supabase
             .from('users')
-            .select('*, licensed_orgs(*)') 
+            .select('*') 
             .eq('username', username)
             .eq('status', 'active')
             .single();
         
         if (error) {
-            logger.error('Database query error', { error: error.message, code: error.code });
-            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'db_error' });
+            logger.error('Database query error', { error: error.message, code: error.code, details: error.details });
+            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'db_error', msg: error.message });
         }
         
         if (!user) {
@@ -88,6 +87,17 @@ router.post('/login', authLimiter, async (req, res) => {
         if (!isValid) {
             logger.error('Password verification failed', { username, hashPrefix: user.password_hash?.substring(0, 10) });
             return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'pwd_fail' });
+        }
+        
+        // Fetch org separately if user has org_id
+        let org = null;
+        if (user.org_id) {
+            const { data: orgData } = await supabase
+                .from('licensed_orgs')
+                .select('*')
+                .eq('id', user.org_id)
+                .single();
+            org = orgData;
         }
         
         // Check JWT_SECRET is configured
@@ -124,7 +134,7 @@ router.post('/login', authLimiter, async (req, res) => {
                 fullName: user.full_name,
                 role: user.role,
                 orgId: user.org_id,
-                org: user.licensed_orgs
+                org: org
             }
         });
     } catch (error) {
