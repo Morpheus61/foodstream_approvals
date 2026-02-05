@@ -137,9 +137,18 @@ app.use('/api/signatures', signatureRoutes);
 // SERVE STATIC FILES (Frontend)
 // =====================================================
 
+// Serve the new React app for /app routes
+app.use('/app', express.static(path.join(__dirname, '../public/app')));
+
+// Serve legacy public files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// PWA routes - serve index.html for all frontend routes
+// React app - SPA routing (serve index.html for all /app/* routes)
+app.get('/app/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/app/index.html'));
+});
+
+// Legacy PWA routes - serve index.html for all frontend routes
 app.get('*', (req, res, next) => {
     // Skip API routes
     if (req.path.startsWith('/api')) {

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Management - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar { transition: width 0.3s ease; }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .badge { padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-trial { background: #fef3c7; color: #92400e; }
+        .badge-expired { background: #fee2e2; color: #991b1b; }
+        .badge-cancelled { background: #f3f4f6; color: #4b5563; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">🍕 FoodStream</h1>
+                <p class="text-sm text-gray-500">Admin Dashboard</p>
+            </div>
+            <nav class="mt-6">
+                <a href="/admin/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>Dashboard
+                </a>
+                <a href="/admin/subscriptions.html" class="sidebar-link active flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="credit-card" class="w-5 h-5 mr-3"></i>Subscriptions
+                </a>
+                <a href="/admin/pricing.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="tags" class="w-5 h-5 mr-3"></i>Pricing Plans
+                </a>
+                <a href="/admin/users.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i>Users
+                </a>
+                <a href="/admin/licenses.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="key" class="w-5 h-5 mr-3"></i>License Keys
+                </a>
+                <a href="/admin/companies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="building-2" class="w-5 h-5 mr-3"></i>Companies
+                </a>
+                <a href="/admin/currencies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="coins" class="w-5 h-5 mr-3"></i>Currencies
+                </a>
+                <div class="border-t mt-4 pt-4">
+                    <a href="/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                        <i data-lucide="globe" class="w-5 h-5 mr-3"></i>View Website
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Subscription Management</h1>
+                    <p class="text-gray-500">Manage all customer subscriptions</p>
+                </div>
+                <button onclick="showExportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                    Export
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="card p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="filterStatus" class="w-full border rounded-lg px-3 py-2" onchange="filterSubscriptions()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="trial">Trial</option>
+                            <option value="expired">Expired</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                        <select id="filterPlan" class="w-full border rounded-lg px-3 py-2" onchange="filterSubscriptions()">
+                            <option value="">All Plans</option>
+                            <option value="trial">Trial</option>
+                            <option value="basic">Basic</option>
+                            <option value="premium">Premium</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                        <select id="filterCurrency" class="w-full border rounded-lg px-3 py-2" onchange="filterSubscriptions()">
+                            <option value="">All Currencies</option>
+                            <option value="HKD">HKD</option>
+                            <option value="USD">USD</option>
+                            <option value="INR">INR</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" id="searchQuery" placeholder="Company or email..." class="w-full border rounded-lg px-3 py-2" oninput="filterSubscriptions()">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="clearFilters()" class="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Total Active</p>
+                    <p id="statActive" class="text-2xl font-bold text-green-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Free Trials</p>
+                    <p id="statTrials" class="text-2xl font-bold text-yellow-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Monthly Revenue</p>
+                    <p id="statRevenue" class="text-2xl font-bold text-indigo-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Churn Rate</p>
+                    <p id="statChurn" class="text-2xl font-bold text-red-600">--</p>
+                </div>
+            </div>
+
+            <!-- Subscriptions Table -->
+            <div class="card overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Next Billing</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscriptionsTable" class="divide-y divide-gray-200">
+                        <!-- Data loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-between items-center mt-4">
+                <p id="paginationInfo" class="text-sm text-gray-500">Showing 1-10 of 50 results</p>
+                <div class="flex space-x-2">
+                    <button onclick="prevPage()" class="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>
+                    <button onclick="nextPage()" class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Subscription Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Edit Subscription</h3>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <input type="text" id="editCompany" class="w-full border rounded-lg px-3 py-2" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                    <select id="editPlan" class="w-full border rounded-lg px-3 py-2">
+                        <option value="trial">Trial</option>
+                        <option value="basic">Basic</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="editStatus" class="w-full border rounded-lg px-3 py-2">
+                        <option value="active">Active</option>
+                        <option value="trial">Trial</option>
+                        <option value="expired">Expired</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                    <select id="editCurrency" class="w-full border rounded-lg px-3 py-2">
+                        <option value="HKD">HKD - Hong Kong Dollar</option>
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="INR">INR - Indian Rupee</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="SGD">SGD - Singapore Dollar</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Custom Price (optional)</label>
+                    <input type="number" id="editPrice" class="w-full border rounded-lg px-3 py-2" placeholder="Leave empty for default">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                        Save Changes
+                    </button>
+                    <button type="button" onclick="closeEditModal()" class="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        const API_BASE = window.location.origin + '/api';
+        let allSubscriptions = [];
+        let currentPage = 1;
+        const perPage = 10;
+
+        // Sample data for demo
+        const sampleSubscriptions = [
+            { id: 1, company: 'ABC Corporation', email: 'admin@abc.com', plan: 'premium', amount: 1920, currency: 'HKD', status: 'active', nextBilling: '2026-03-05', country: 'HK' },
+            { id: 2, company: 'XYZ Limited', email: 'info@xyz.com', plan: 'basic', amount: 720, currency: 'HKD', status: 'active', nextBilling: '2026-03-01', country: 'HK' },
+            { id: 3, company: 'Tech Solutions India', email: 'contact@techsol.in', plan: 'premium', amount: 20428, currency: 'INR', status: 'active', nextBilling: '2026-03-10', country: 'IN' },
+            { id: 4, company: 'Demo Company', email: 'demo@example.com', plan: 'trial', amount: 0, currency: 'USD', status: 'trial', nextBilling: '2026-02-20', country: 'US' },
+            { id: 5, company: 'Global Enterprises', email: 'admin@global.co.uk', plan: 'enterprise', amount: 5000, currency: 'GBP', status: 'active', nextBilling: '2026-03-15', country: 'GB' },
+            { id: 6, company: 'Singapore Foods', email: 'hello@sgfoods.sg', plan: 'basic', amount: 124, currency: 'SGD', status: 'active', nextBilling: '2026-03-08', country: 'SG' },
+            { id: 7, company: 'Mumbai Merchants', email: 'sales@mumbai.in', plan: 'basic', amount: 7668, currency: 'INR', status: 'trial', nextBilling: '2026-02-28', country: 'IN' },
+            { id: 8, company: 'Expired Corp', email: 'old@expired.com', plan: 'basic', amount: 720, currency: 'HKD', status: 'expired', nextBilling: '-', country: 'HK' },
+        ];
+
+        // Currency symbols
+        const currencySymbols = {
+            HKD: 'HK$', USD: '$', EUR: '€', GBP: '£', INR: '₹', SGD: 'S$', AED: 'AED', CNY: '¥'
+        };
+
+        function formatCurrency(amount, currency) {
+            const symbol = currencySymbols[currency] || currency;
+            return `${symbol} ${amount.toLocaleString()}`;
+        }
+
+        function getStatusBadge(status) {
+            const classes = {
+                active: 'badge-active',
+                trial: 'badge-trial',
+                expired: 'badge-expired',
+                cancelled: 'badge-cancelled'
+            };
+            return `<span class="badge ${classes[status] || 'badge-active'}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+        }
+
+        async function loadSubscriptions() {
+            try {
+                // In production, fetch from API
+                // const response = await fetch(`${API_BASE}/admin/subscriptions`);
+                // const data = await response.json();
+                // allSubscriptions = data.subscriptions;
+                
+                // Using sample data for demo
+                allSubscriptions = sampleSubscriptions;
+                renderSubscriptions();
+                updateStats();
+            } catch (error) {
+                console.error('Failed to load subscriptions:', error);
+                allSubscriptions = sampleSubscriptions;
+                renderSubscriptions();
+                updateStats();
+            }
+        }
+
+        function renderSubscriptions() {
+            const filtered = getFilteredSubscriptions();
+            const start = (currentPage - 1) * perPage;
+            const paginated = filtered.slice(start, start + perPage);
+
+            const tbody = document.getElementById('subscriptionsTable');
+            tbody.innerHTML = paginated.map(sub => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div>
+                            <p class="font-medium">${sub.company}</p>
+                            <p class="text-sm text-gray-500">${sub.email}</p>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="font-medium capitalize">${sub.plan}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        ${sub.amount > 0 ? formatCurrency(sub.amount, sub.currency) : 'Free'}
+                        <span class="text-xs text-gray-400 block">${sub.currency}</span>
+                    </td>
+                    <td class="px-6 py-4">${getStatusBadge(sub.status)}</td>
+                    <td class="px-6 py-4 text-sm">${sub.nextBilling}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <button onclick="editSubscription(${sub.id})" class="text-indigo-600 hover:text-indigo-800">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="viewDetails(${sub.id})" class="text-gray-600 hover:text-gray-800">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('paginationInfo').textContent = 
+                `Showing ${start + 1}-${Math.min(start + perPage, filtered.length)} of ${filtered.length} results`;
+            
+            lucide.createIcons();
+        }
+
+        function getFilteredSubscriptions() {
+            const status = document.getElementById('filterStatus').value;
+            const plan = document.getElementById('filterPlan').value;
+            const currency = document.getElementById('filterCurrency').value;
+            const search = document.getElementById('searchQuery').value.toLowerCase();
+
+            return allSubscriptions.filter(sub => {
+                if (status && sub.status !== status) return false;
+                if (plan && sub.plan !== plan) return false;
+                if (currency && sub.currency !== currency) return false;
+                if (search && !sub.company.toLowerCase().includes(search) && !sub.email.toLowerCase().includes(search)) return false;
+                return true;
+            });
+        }
+
+        function filterSubscriptions() {
+            currentPage = 1;
+            renderSubscriptions();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPlan').value = '';
+            document.getElementById('filterCurrency').value = '';
+            document.getElementById('searchQuery').value = '';
+            filterSubscriptions();
+        }
+
+        function updateStats() {
+            const active = allSubscriptions.filter(s => s.status === 'active').length;
+            const trials = allSubscriptions.filter(s => s.status === 'trial').length;
+            const revenue = allSubscriptions
+                .filter(s => s.status === 'active')
+                .reduce((sum, s) => sum + (s.currency === 'HKD' ? s.amount : s.amount * 0.1), 0); // Simplified conversion
+
+            document.getElementById('statActive').textContent = active;
+            document.getElementById('statTrials').textContent = trials;
+            document.getElementById('statRevenue').textContent = `HK$ ${Math.round(revenue).toLocaleString()}`;
+            document.getElementById('statChurn').textContent = '2.3%';
+        }
+
+        function editSubscription(id) {
+            const sub = allSubscriptions.find(s => s.id === id);
+            if (!sub) return;
+
+            document.getElementById('editId').value = sub.id;
+            document.getElementById('editCompany').value = sub.company;
+            document.getElementById('editPlan').value = sub.plan;
+            document.getElementById('editStatus').value = sub.status;
+            document.getElementById('editCurrency').value = sub.currency;
+            document.getElementById('editPrice').value = sub.amount || '';
+
+            document.getElementById('editModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            // Save changes - in production, send to API
+            alert('Changes saved successfully!');
+            closeEditModal();
+            loadSubscriptions();
+        });
+
+        function viewDetails(id) {
+            // Navigate to detailed view
+            alert('View details for subscription #' + id);
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderSubscriptions();
+            }
+        }
+
+        function nextPage() {
+            const filtered = getFilteredSubscriptions();
+            if (currentPage * perPage < filtered.length) {
+                currentPage++;
+                renderSubscriptions();
+            }
+        }
+
+        function showExportModal() {
+            alert('Export functionality - Download CSV/Excel of all subscriptions');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadSubscriptions);
+    </script>
+</body>
+</html>

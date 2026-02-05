@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Management - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar { transition: width 0.3s ease; }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">🍕 FoodStream</h1>
+                <p class="text-sm text-gray-500">Admin Dashboard</p>
+            </div>
+            <nav class="mt-6">
+                <a href="/admin/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>Dashboard
+                </a>
+                <a href="/admin/subscriptions.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="credit-card" class="w-5 h-5 mr-3"></i>Subscriptions
+                </a>
+                <a href="/admin/pricing.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="tags" class="w-5 h-5 mr-3"></i>Pricing Plans
+                </a>
+                <a href="/admin/users.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i>Users
+                </a>
+                <a href="/admin/licenses.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="key" class="w-5 h-5 mr-3"></i>License Keys
+                </a>
+                <a href="/admin/companies.html" class="sidebar-link active flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="building-2" class="w-5 h-5 mr-3"></i>Companies
+                </a>
+                <a href="/admin/currencies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="coins" class="w-5 h-5 mr-3"></i>Currencies
+                </a>
+                <div class="border-t mt-4 pt-4">
+                    <a href="/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                        <i data-lucide="globe" class="w-5 h-5 mr-3"></i>View Website
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Company / Organization Management</h1>
+                    <p class="text-gray-500">View and manage all registered organizations</p>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Total Organizations</p>
+                    <p id="statTotal" class="text-2xl font-bold text-gray-800">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Active</p>
+                    <p id="statActive" class="text-2xl font-bold text-green-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Trial</p>
+                    <p id="statTrial" class="text-2xl font-bold text-yellow-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Suspended</p>
+                    <p id="statSuspended" class="text-2xl font-bold text-red-600">--</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="filterStatus" class="w-full border rounded-lg px-3 py-2" onchange="filterCompanies()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="trial">Trial</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                        <select id="filterPlan" class="w-full border rounded-lg px-3 py-2" onchange="filterCompanies()">
+                            <option value="">All Plans</option>
+                            <option value="trial">Trial</option>
+                            <option value="basic">Basic</option>
+                            <option value="premium">Premium</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" id="searchQuery" placeholder="Company name or email..." class="w-full border rounded-lg px-3 py-2" oninput="filterCompanies()">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="clearFilters()" class="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Companies Grid -->
+            <div id="companiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic content -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Company Details Modal -->
+    <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="modalTitle">Company Details</h3>
+                <button onclick="closeDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="modalContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        let allCompanies = [];
+
+        // Sample companies for demo
+        const sampleCompanies = [
+            {
+                id: 1,
+                name: 'ABC Corporation',
+                email: 'admin@abc.com',
+                country: 'HK',
+                currency: 'HKD',
+                plan: 'premium',
+                status: 'active',
+                users: 12,
+                vouchers: 450,
+                licenseKey: 'PRM-A1B2C-D3E4F-G5H6-I7J8',
+                expiresAt: '2027-02-05',
+                createdAt: '2025-02-05'
+            },
+            {
+                id: 2,
+                name: 'XYZ Limited',
+                email: 'info@xyz.com',
+                country: 'HK',
+                currency: 'HKD',
+                plan: 'basic',
+                status: 'active',
+                users: 5,
+                vouchers: 230,
+                licenseKey: 'BSC-K9L0M-N1O2P-Q3R4-S5T6',
+                expiresAt: '2027-01-15',
+                createdAt: '2025-01-15'
+            },
+            {
+                id: 3,
+                name: 'Tech Solutions India',
+                email: 'contact@techsol.in',
+                country: 'IN',
+                currency: 'INR',
+                plan: 'premium',
+                status: 'active',
+                users: 25,
+                vouchers: 1200,
+                licenseKey: 'PRM-X1Y2Z-A3B4C-D5E6-F7G8',
+                expiresAt: '2027-03-10',
+                createdAt: '2025-03-10'
+            },
+            {
+                id: 4,
+                name: 'Demo Company',
+                email: 'demo@example.com',
+                country: 'US',
+                currency: 'USD',
+                plan: 'trial',
+                status: 'trial',
+                users: 2,
+                vouchers: 15,
+                licenseKey: 'TRL-U7V8W-X9Y0Z-A1B2-C3D4',
+                expiresAt: '2026-03-07',
+                createdAt: '2026-02-05'
+            },
+            {
+                id: 5,
+                name: 'Global Enterprises',
+                email: 'admin@global.co.uk',
+                country: 'GB',
+                currency: 'GBP',
+                plan: 'enterprise',
+                status: 'active',
+                users: 150,
+                vouchers: 5600,
+                licenseKey: 'ENT-E5F6G-H7I8J-K9L0-M1N2',
+                expiresAt: '2028-02-05',
+                createdAt: '2024-02-05'
+            },
+            {
+                id: 6,
+                name: 'Expired Corp',
+                email: 'old@expired.com',
+                country: 'HK',
+                currency: 'HKD',
+                plan: 'basic',
+                status: 'expired',
+                users: 3,
+                vouchers: 0,
+                licenseKey: 'BSC-O3P4Q-R5S6T-U7V8-W9X0',
+                expiresAt: '2025-12-01',
+                createdAt: '2024-12-01'
+            }
+        ];
+
+        const countryFlags = {
+            'HK': '🇭🇰', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'SG': '🇸🇬',
+            'AE': '🇦🇪', 'AU': '🇦🇺', 'CN': '🇨🇳', 'JP': '🇯🇵', 'DE': '🇩🇪'
+        };
+
+        function getStatusBadge(status) {
+            const styles = {
+                active: 'bg-green-100 text-green-700',
+                trial: 'bg-yellow-100 text-yellow-700',
+                expired: 'bg-red-100 text-red-700',
+                suspended: 'bg-gray-100 text-gray-700'
+            };
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status]}">${status}</span>`;
+        }
+
+        function getPlanBadge(plan) {
+            const styles = {
+                trial: 'bg-blue-100 text-blue-700',
+                basic: 'bg-purple-100 text-purple-700',
+                premium: 'bg-indigo-100 text-indigo-700',
+                enterprise: 'bg-pink-100 text-pink-700'
+            };
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[plan]}">${plan}</span>`;
+        }
+
+        async function loadCompanies() {
+            try {
+                allCompanies = sampleCompanies;
+                renderCompanies();
+                updateStats();
+            } catch (error) {
+                console.error('Failed to load companies:', error);
+            }
+        }
+
+        function renderCompanies() {
+            const filtered = getFilteredCompanies();
+            const grid = document.getElementById('companiesGrid');
+            
+            grid.innerHTML = filtered.map(company => `
+                <div class="card p-6 hover:shadow-lg transition-shadow cursor-pointer" onclick="viewCompany(${company.id})">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center">
+                            <span class="text-2xl mr-2">${countryFlags[company.country] || '🏢'}</span>
+                            <div>
+                                <h3 class="font-bold text-gray-800">${company.name}</h3>
+                                <p class="text-sm text-gray-500">${company.email}</p>
+                            </div>
+                        </div>
+                        ${getStatusBadge(company.status)}
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        ${getPlanBadge(company.plan)}
+                        <span class="text-sm text-gray-500">${company.currency}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500">Users</p>
+                            <p class="font-semibold">${company.users}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Vouchers</p>
+                            <p class="font-semibold">${company.vouchers.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t text-xs text-gray-400">
+                        Expires: ${company.expiresAt}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getFilteredCompanies() {
+            const status = document.getElementById('filterStatus').value;
+            const plan = document.getElementById('filterPlan').value;
+            const search = document.getElementById('searchQuery').value.toLowerCase();
+
+            return allCompanies.filter(company => {
+                if (status && company.status !== status) return false;
+                if (plan && company.plan !== plan) return false;
+                if (search) {
+                    const searchable = `${company.name} ${company.email}`.toLowerCase();
+                    if (!searchable.includes(search)) return false;
+                }
+                return true;
+            });
+        }
+
+        function filterCompanies() {
+            renderCompanies();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPlan').value = '';
+            document.getElementById('searchQuery').value = '';
+            renderCompanies();
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allCompanies.length;
+            document.getElementById('statActive').textContent = allCompanies.filter(c => c.status === 'active').length;
+            document.getElementById('statTrial').textContent = allCompanies.filter(c => c.status === 'trial').length;
+            document.getElementById('statSuspended').textContent = allCompanies.filter(c => c.status === 'suspended' || c.status === 'expired').length;
+        }
+
+        function viewCompany(id) {
+            const company = allCompanies.find(c => c.id === id);
+            if (!company) return;
+
+            document.getElementById('modalTitle').textContent = company.name;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-3xl">${countryFlags[company.country] || '🏢'}</span>
+                        <div class="space-x-2">
+                            ${getStatusBadge(company.status)}
+                            ${getPlanBadge(company.plan)}
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Email</p>
+                            <p class="font-medium">${company.email}</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Currency</p>
+                            <p class="font-medium">${company.currency}</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Users</p>
+                            <p class="font-medium">${company.users}</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Vouchers Created</p>
+                            <p class="font-medium">${company.vouchers.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500">License Key</p>
+                        <code class="font-mono text-indigo-600">${company.licenseKey}</code>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Created</p>
+                            <p class="font-medium">${company.createdAt}</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500">Expires</p>
+                            <p class="font-medium">${company.expiresAt}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="editCompany(${company.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                            Edit Details
+                        </button>
+                        ${company.status === 'active' ? `
+                            <button onclick="suspendCompany(${company.id})" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
+                                Suspend
+                            </button>
+                        ` : `
+                            <button onclick="activateCompany(${company.id})" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+                                Activate
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailsModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        function editCompany(id) {
+            alert('Edit company details (In production, this would open an edit form)');
+        }
+
+        function suspendCompany(id) {
+            if (confirm('Are you sure you want to suspend this company?')) {
+                const company = allCompanies.find(c => c.id === id);
+                if (company) company.status = 'suspended';
+                closeDetailsModal();
+                renderCompanies();
+                updateStats();
+            }
+        }
+
+        function activateCompany(id) {
+            if (confirm('Activate this company?')) {
+                const company = allCompanies.find(c => c.id === id);
+                if (company) company.status = 'active';
+                closeDetailsModal();
+                renderCompanies();
+                updateStats();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadCompanies);
+    </script>
+</body>
+</html>

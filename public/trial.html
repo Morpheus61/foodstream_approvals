@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Free Trial - FoodStream Approvals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0891b2 0%, #164e63 100%);
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="card max-w-md w-full p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-4">🚀</div>
+            <h1 class="text-2xl font-bold text-gray-800">Start Your Free Trial</h1>
+            <p class="text-gray-600 mt-2">30 days free • No credit card required</p>
+        </div>
+
+        <!-- Trial Benefits -->
+        <div class="bg-cyan-50 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-cyan-800 mb-2">What's included:</h3>
+            <ul class="text-sm text-cyan-700 space-y-1">
+                <li>✓ 1 Company</li>
+                <li>✓ 3 Users</li>
+                <li>✓ 50 Vouchers/month</li>
+                <li>✓ 100 SMS Credits</li>
+                <li>✓ Digital Signatures</li>
+                <li>✓ Basic Reporting</li>
+            </ul>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="trialForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input 
+                    type="text" 
+                    id="companyName"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="Your Company Name"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input 
+                    type="text" 
+                    id="fullName"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="John Doe"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="john@company.com"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                <input 
+                    type="tel" 
+                    id="mobile"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="+91 98765 43210"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input 
+                    type="password" 
+                    id="password"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="Create a secure password"
+                    minlength="8"
+                    required
+                >
+                <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <select 
+                    id="country"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    required
+                >
+                    <option value="">Select your country</option>
+                </select>
+                <input type="hidden" id="detectedCountry">
+                <input type="hidden" id="detectedCurrency">
+            </div>
+
+            <div class="flex items-start">
+                <input 
+                    type="checkbox" 
+                    id="terms"
+                    class="mt-1 mr-2"
+                    required
+                >
+                <label for="terms" class="text-sm text-gray-600">
+                    I agree to the <a href="/terms" class="text-cyan-600 hover:underline">Terms of Service</a> 
+                    and <a href="/privacy" class="text-cyan-600 hover:underline">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button 
+                type="submit"
+                id="submitBtn"
+                class="w-full bg-gradient-to-r from-cyan-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-cyan-700 hover:to-teal-700 transition-all"
+            >
+                Start Free Trial
+            </button>
+        </form>
+
+        <!-- Alternative Options -->
+        <div class="mt-6 text-center text-sm text-gray-600">
+            <p>Already have an account? <a href="/app.html" class="text-cyan-600 hover:underline font-medium">Login</a></p>
+            <p class="mt-2">Have a license key? <a href="/app.html?activate=true" class="text-cyan-600 hover:underline font-medium">Activate License</a></p>
+        </div>
+
+        <!-- Pricing Preview -->
+        <div id="pricing-preview" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+            <p class="text-sm text-gray-600 text-center">
+                After trial, plans start from <span id="local-price" class="font-bold text-cyan-600">HK$ 720</span>/month
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast" class="fixed top-4 right-4 bg-white shadow-lg rounded-lg p-4 transform translate-x-full transition-transform duration-300 z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+
+        // Country data with currencies
+        const countries = [
+            { code: 'IN', name: 'India', currency: 'INR', symbol: '₹' },
+            { code: 'HK', name: 'Hong Kong', currency: 'HKD', symbol: 'HK$' },
+            { code: 'US', name: 'United States', currency: 'USD', symbol: '$' },
+            { code: 'GB', name: 'United Kingdom', currency: 'GBP', symbol: '£' },
+            { code: 'SG', name: 'Singapore', currency: 'SGD', symbol: 'S$' },
+            { code: 'AE', name: 'United Arab Emirates', currency: 'AED', symbol: 'AED' },
+            { code: 'AU', name: 'Australia', currency: 'AUD', symbol: 'A$' },
+            { code: 'CA', name: 'Canada', currency: 'CAD', symbol: 'C$' },
+            { code: 'CN', name: 'China', currency: 'CNY', symbol: '¥' },
+            { code: 'JP', name: 'Japan', currency: 'JPY', symbol: '¥' },
+            { code: 'DE', name: 'Germany', currency: 'EUR', symbol: '€' },
+            { code: 'FR', name: 'France', currency: 'EUR', symbol: '€' },
+            { code: 'MY', name: 'Malaysia', currency: 'MYR', symbol: 'RM' },
+            { code: 'PH', name: 'Philippines', currency: 'PHP', symbol: '₱' },
+            { code: 'TH', name: 'Thailand', currency: 'THB', symbol: '฿' },
+            { code: 'ID', name: 'Indonesia', currency: 'IDR', symbol: 'Rp' },
+            { code: 'VN', name: 'Vietnam', currency: 'VND', symbol: '₫' },
+            { code: 'ZA', name: 'South Africa', currency: 'ZAR', symbol: 'R' },
+            { code: 'NZ', name: 'New Zealand', currency: 'NZD', symbol: 'NZ$' },
+            { code: 'KR', name: 'South Korea', currency: 'KRW', symbol: '₩' },
+        ].sort((a, b) => a.name.localeCompare(b.name));
+
+        // Exchange rates (base: HKD) - Update these from API in production
+        const exchangeRates = {
+            HKD: 1,
+            USD: 0.128,
+            EUR: 0.118,
+            GBP: 0.101,
+            INR: 10.65,
+            SGD: 0.172,
+            AED: 0.47,
+            AUD: 0.196,
+            CAD: 0.174,
+            CNY: 0.918,
+            JPY: 19.13,
+            MYR: 0.57,
+            PHP: 7.14,
+            THB: 4.45,
+            IDR: 2015,
+            VND: 3180,
+            ZAR: 2.38,
+            NZD: 0.213,
+            KRW: 170
+        };
+
+        // Base prices in HKD
+        const basePrices = {
+            basic: 720,
+            premium: 1920,
+            enterprise: 'Custom'
+        };
+
+        // Populate country dropdown
+        function populateCountries() {
+            const select = document.getElementById('country');
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.code;
+                option.textContent = `${country.name} (${country.currency})`;
+                option.dataset.currency = country.currency;
+                option.dataset.symbol = country.symbol;
+                select.appendChild(option);
+            });
+        }
+
+        // Detect user's location
+        async function detectLocation() {
+            try {
+                // Try multiple geolocation services
+                const services = [
+                    'https://ipapi.co/json/',
+                    'https://ip-api.com/json/',
+                    'https://ipinfo.io/json'
+                ];
+
+                for (const service of services) {
+                    try {
+                        const response = await fetch(service, { timeout: 3000 });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const countryCode = data.country_code || data.countryCode || data.country;
+                            
+                            if (countryCode) {
+                                const country = countries.find(c => c.code === countryCode);
+                                if (country) {
+                                    document.getElementById('country').value = countryCode;
+                                    document.getElementById('detectedCountry').value = countryCode;
+                                    document.getElementById('detectedCurrency').value = country.currency;
+                                    updatePricePreview(country.currency, country.symbol);
+                                    console.log('Location detected:', country.name);
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Service failed, trying next...');
+                    }
+                }
+                
+                // Default to Hong Kong if detection fails
+                document.getElementById('country').value = 'HK';
+                updatePricePreview('HKD', 'HK$');
+            } catch (error) {
+                console.error('Location detection failed:', error);
+                document.getElementById('country').value = 'HK';
+                updatePricePreview('HKD', 'HK$');
+            }
+        }
+
+        // Update price preview based on currency
+        function updatePricePreview(currency, symbol) {
+            const rate = exchangeRates[currency] || 1;
+            const localPrice = Math.round(basePrices.basic * rate);
+            
+            const preview = document.getElementById('pricing-preview');
+            const priceElement = document.getElementById('local-price');
+            
+            priceElement.textContent = `${symbol} ${localPrice.toLocaleString()}`;
+            preview.classList.remove('hidden');
+        }
+
+        // Handle country change
+        document.getElementById('country').addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            if (selected.dataset.currency) {
+                updatePricePreview(selected.dataset.currency, selected.dataset.symbol);
+            }
+        });
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.className = `fixed top-4 right-4 shadow-lg rounded-lg p-4 transform transition-transform duration-300 z-50 ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-blue-100 text-blue-800'
+            }`;
+            toast.classList.remove('translate-x-full');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // Handle form submission
+        document.getElementById('trialForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating your account...';
+
+            const formData = {
+                companyName: document.getElementById('companyName').value,
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                mobile: document.getElementById('mobile').value,
+                password: document.getElementById('password').value,
+                country: document.getElementById('country').value,
+                currency: document.getElementById('country').options[document.getElementById('country').selectedIndex].dataset.currency || 'HKD',
+                planType: 'trial'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/onboarding/start-trial`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Account created successfully! Redirecting...', 'success');
+                    
+                    // Store trial info
+                    localStorage.setItem('trialActive', 'true');
+                    localStorage.setItem('licenseKey', data.licenseKey || 'TRIAL');
+                    localStorage.setItem('userCurrency', formData.currency);
+                    
+                    // Redirect to app
+                    setTimeout(() => {
+                        window.location.href = '/app.html';
+                    }, 1500);
+                } else {
+                    showToast(data.error || 'Registration failed. Please try again.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Start Free Trial';
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showToast('Network error. Please check your connection.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Start Free Trial';
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCountries();
+            detectLocation();
+        });
+    </script>
+</body>
+</html>

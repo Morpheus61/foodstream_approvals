@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - FoodStream SAAS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stat-card.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .stat-card.orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">🍕 FoodStream</h1>
+                <p class="text-sm text-gray-500">Admin Dashboard</p>
+            </div>
+            
+            <nav class="mt-6">
+                <a href="/admin/" class="sidebar-link active flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="/admin/subscriptions.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="credit-card" class="w-5 h-5 mr-3"></i>
+                    Subscriptions
+                </a>
+                <a href="/admin/pricing.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="tags" class="w-5 h-5 mr-3"></i>
+                    Pricing Plans
+                </a>
+                <a href="/admin/users.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i>
+                    Users
+                </a>
+                <a href="/admin/licenses.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="key" class="w-5 h-5 mr-3"></i>
+                    License Keys
+                </a>
+                <a href="/admin/companies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="building-2" class="w-5 h-5 mr-3"></i>
+                    Companies
+                </a>
+                <a href="/admin/currencies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="coins" class="w-5 h-5 mr-3"></i>
+                    Currencies
+                </a>
+                <a href="/admin/analytics.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                    Analytics
+                </a>
+                <a href="/admin/settings.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                    Settings
+                </a>
+                
+                <div class="border-t mt-4 pt-4">
+                    <a href="/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                        <i data-lucide="globe" class="w-5 h-5 mr-3"></i>
+                        View Website
+                    </a>
+                    <a href="#" onclick="logout()" class="sidebar-link flex items-center px-6 py-3 text-red-600">
+                        <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                        Logout
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+                    <p class="text-gray-500">Welcome back, Admin!</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="admin-currency" class="text-sm text-gray-600 bg-gray-200 px-3 py-1 rounded-full">Loading...</span>
+                    <button onclick="location.reload()" class="p-2 hover:bg-gray-200 rounded-lg">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="card stat-card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white/80 text-sm">Total Users</p>
+                            <p id="stat-users" class="text-3xl font-bold mt-1">--</p>
+                        </div>
+                        <i data-lucide="users" class="w-10 h-10 opacity-50"></i>
+                    </div>
+                    <p class="text-white/70 text-sm mt-2">↑ 12% from last month</p>
+                </div>
+
+                <div class="card stat-card green p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white/80 text-sm">Active Subscriptions</p>
+                            <p id="stat-subscriptions" class="text-3xl font-bold mt-1">--</p>
+                        </div>
+                        <i data-lucide="credit-card" class="w-10 h-10 opacity-50"></i>
+                    </div>
+                    <p class="text-white/70 text-sm mt-2">↑ 8% from last month</p>
+                </div>
+
+                <div class="card stat-card orange p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white/80 text-sm">Monthly Revenue</p>
+                            <p id="stat-revenue" class="text-3xl font-bold mt-1">--</p>
+                        </div>
+                        <i data-lucide="dollar-sign" class="w-10 h-10 opacity-50"></i>
+                    </div>
+                    <p class="text-white/70 text-sm mt-2">↑ 15% from last month</p>
+                </div>
+
+                <div class="card stat-card blue p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white/80 text-sm">Free Trials</p>
+                            <p id="stat-trials" class="text-3xl font-bold mt-1">--</p>
+                        </div>
+                        <i data-lucide="zap" class="w-10 h-10 opacity-50"></i>
+                    </div>
+                    <p class="text-white/70 text-sm mt-2">24 converted this month</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card p-6 mb-8">
+                <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="location.href='/admin/licenses.html?action=generate'" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+                        <i data-lucide="key" class="w-6 h-6 text-indigo-600 mb-2"></i>
+                        <p class="font-medium">Generate License</p>
+                        <p class="text-sm text-gray-500">Create new license key</p>
+                    </button>
+                    <button onclick="location.href='/admin/users.html?action=add'" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+                        <i data-lucide="user-plus" class="w-6 h-6 text-green-600 mb-2"></i>
+                        <p class="font-medium">Add User</p>
+                        <p class="text-sm text-gray-500">Create admin user</p>
+                    </button>
+                    <button onclick="location.href='/admin/pricing.html'" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+                        <i data-lucide="edit" class="w-6 h-6 text-orange-600 mb-2"></i>
+                        <p class="font-medium">Edit Pricing</p>
+                        <p class="text-sm text-gray-500">Update plan prices</p>
+                    </button>
+                    <button onclick="location.href='/admin/currencies.html'" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+                        <i data-lucide="coins" class="w-6 h-6 text-blue-600 mb-2"></i>
+                        <p class="font-medium">Manage Currency</p>
+                        <p class="text-sm text-gray-500">Set exchange rates</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Subscriptions -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Subscriptions -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">Recent Subscriptions</h2>
+                        <a href="/admin/subscriptions.html" class="text-indigo-600 text-sm hover:underline">View All</a>
+                    </div>
+                    <div id="recent-subscriptions" class="space-y-4">
+                        <p class="text-gray-500 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">Recent Activity</h2>
+                        <a href="/admin/analytics.html" class="text-indigo-600 text-sm hover:underline">View All</a>
+                    </div>
+                    <div id="recent-activity" class="space-y-4">
+                        <p class="text-gray-500 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trial Conversions Alert -->
+            <div class="card p-6 mt-6 border-l-4 border-yellow-400 bg-yellow-50">
+                <div class="flex items-start">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-yellow-600 mr-3 mt-1"></i>
+                    <div>
+                        <h3 class="font-semibold text-yellow-800">Trial Expiring Soon</h3>
+                        <p class="text-yellow-700 text-sm mt-1">
+                            <span id="expiring-trials">--</span> free trials are expiring in the next 7 days. 
+                            <a href="/admin/subscriptions.html?filter=expiring" class="underline">View and contact them</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        const API_BASE = window.location.origin + '/api';
+
+        // Check admin authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                // For development, allow access - in production, redirect to login
+                console.log('No admin token found. In production, redirect to admin login.');
+                // window.location.href = '/admin/login.html';
+            }
+        }
+
+        // Load dashboard stats
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/dashboard/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('stat-users').textContent = data.stats.totalUsers || 0;
+                        document.getElementById('stat-subscriptions').textContent = data.stats.activeSubscriptions || 0;
+                        document.getElementById('stat-revenue').textContent = formatCurrency(data.stats.monthlyRevenue || 0);
+                        document.getElementById('stat-trials').textContent = data.stats.freeTrials || 0;
+                        document.getElementById('expiring-trials').textContent = data.stats.expiringTrials || 0;
+                    }
+                } else {
+                    // Use placeholder data for demo
+                    loadPlaceholderStats();
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                loadPlaceholderStats();
+            }
+        }
+
+        function loadPlaceholderStats() {
+            document.getElementById('stat-users').textContent = '156';
+            document.getElementById('stat-subscriptions').textContent = '89';
+            document.getElementById('stat-revenue').textContent = 'HK$ 124,500';
+            document.getElementById('stat-trials').textContent = '34';
+            document.getElementById('expiring-trials').textContent = '8';
+            document.getElementById('admin-currency').textContent = 'Base: HKD';
+        }
+
+        function formatCurrency(amount, currency = 'HKD') {
+            const symbols = { HKD: 'HK$', USD: '$', EUR: '€', GBP: '£', INR: '₹', SGD: 'S$' };
+            return `${symbols[currency] || currency} ${amount.toLocaleString()}`;
+        }
+
+        // Load recent subscriptions
+        async function loadRecentSubscriptions() {
+            const container = document.getElementById('recent-subscriptions');
+            
+            // Placeholder data for demo
+            const subscriptions = [
+                { company: 'ABC Corp', plan: 'Premium', amount: 'HK$ 1,920', date: '2 hours ago', status: 'active' },
+                { company: 'XYZ Ltd', plan: 'Basic', amount: 'HK$ 720', date: '5 hours ago', status: 'active' },
+                { company: 'Demo Co', plan: 'Trial', amount: 'Free', date: '1 day ago', status: 'trial' },
+                { company: 'Tech Inc', plan: 'Enterprise', amount: 'Custom', date: '2 days ago', status: 'active' }
+            ];
+
+            container.innerHTML = subscriptions.map(sub => `
+                <div class="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                        <p class="font-medium">${sub.company}</p>
+                        <p class="text-sm text-gray-500">${sub.plan} • ${sub.date}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium">${sub.amount}</p>
+                        <span class="text-xs px-2 py-1 rounded-full ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                            ${sub.status}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            const container = document.getElementById('recent-activity');
+            
+            // Placeholder data for demo
+            const activities = [
+                { icon: 'user-plus', text: 'New user registered: john@example.com', time: '10 min ago', color: 'text-green-600' },
+                { icon: 'credit-card', text: 'Subscription upgraded: ABC Corp to Premium', time: '1 hour ago', color: 'text-blue-600' },
+                { icon: 'key', text: 'License generated: PRM-XXXXX-XXXXX', time: '2 hours ago', color: 'text-purple-600' },
+                { icon: 'alert-circle', text: 'Trial expired: Demo Company', time: '5 hours ago', color: 'text-orange-600' }
+            ];
+
+            container.innerHTML = activities.map(act => `
+                <div class="flex items-start space-x-3 py-2 border-b last:border-0">
+                    <i data-lucide="${act.icon}" class="w-5 h-5 ${act.color} mt-1"></i>
+                    <div class="flex-1">
+                        <p class="text-sm">${act.text}</p>
+                        <p class="text-xs text-gray-400">${act.time}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Re-initialize icons for dynamic content
+            lucide.createIcons();
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadDashboardStats();
+            loadRecentSubscriptions();
+            loadRecentActivity();
+        });
+    </script>
+</body>
+</html>

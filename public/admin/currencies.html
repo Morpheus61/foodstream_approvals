@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Management - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar { transition: width 0.3s ease; }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">🍕 FoodStream</h1>
+                <p class="text-sm text-gray-500">Admin Dashboard</p>
+            </div>
+            <nav class="mt-6">
+                <a href="/admin/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>Dashboard
+                </a>
+                <a href="/admin/subscriptions.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="credit-card" class="w-5 h-5 mr-3"></i>Subscriptions
+                </a>
+                <a href="/admin/pricing.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="tags" class="w-5 h-5 mr-3"></i>Pricing Plans
+                </a>
+                <a href="/admin/users.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i>Users
+                </a>
+                <a href="/admin/licenses.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="key" class="w-5 h-5 mr-3"></i>License Keys
+                </a>
+                <a href="/admin/companies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="building-2" class="w-5 h-5 mr-3"></i>Companies
+                </a>
+                <a href="/admin/currencies.html" class="sidebar-link active flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="coins" class="w-5 h-5 mr-3"></i>Currencies
+                </a>
+                <div class="border-t mt-4 pt-4">
+                    <a href="/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                        <i data-lucide="globe" class="w-5 h-5 mr-3"></i>View Website
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Currency & Localization</h1>
+                    <p class="text-gray-500">Manage currencies and exchange rates for global pricing</p>
+                </div>
+                <button onclick="fetchLiveRates()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                    Fetch Live Rates
+                </button>
+            </div>
+
+            <!-- Base Currency Info -->
+            <div class="card p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold">Base Currency</h2>
+                        <p class="text-gray-500 text-sm">All prices are stored in this currency and converted for display</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <select id="baseCurrency" class="border rounded-lg px-4 py-2 font-medium">
+                            <option value="HKD" selected>HKD - Hong Kong Dollar</option>
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                        </select>
+                        <button onclick="saveBaseCurrency()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto-Detection Settings -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-lg font-semibold mb-4">🌍 Geo-Location Currency Detection</h2>
+                <p class="text-gray-500 text-sm mb-4">Automatically detect user's country and display prices in their local currency</p>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between py-3 border-b">
+                        <div>
+                            <p class="font-medium">Enable Auto-Detection</p>
+                            <p class="text-sm text-gray-500">Use IP geolocation to detect user's country</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoDetect" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between py-3 border-b">
+                        <div>
+                            <p class="font-medium">Show Currency Selector</p>
+                            <p class="text-sm text-gray-500">Allow users to manually change their preferred currency</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="showSelector" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between py-3">
+                        <div>
+                            <p class="font-medium">Round Converted Prices</p>
+                            <p class="text-sm text-gray-500">Round to nearest whole number for cleaner display</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="roundPrices" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exchange Rates Table -->
+            <div class="card overflow-hidden">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-semibold">Exchange Rates</h2>
+                        <p class="text-gray-500 text-sm">Last updated: <span id="lastUpdated">Loading...</span></p>
+                    </div>
+                    <button onclick="openAddCurrencyModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                        Add Currency
+                    </button>
+                </div>
+
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Currency</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate (1 HKD =)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Basic Plan Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Premium Plan Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="currencyTable" class="divide-y divide-gray-200">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Country-Currency Mapping -->
+            <div class="card p-6 mt-6">
+                <h2 class="text-lg font-semibold mb-4">Country → Currency Mapping</h2>
+                <p class="text-gray-500 text-sm mb-4">Define which currency to show for each country</p>
+                
+                <div id="countryMappings" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Currency Modal -->
+    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Add Currency</h3>
+                <button onclick="closeAddModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="addCurrencyForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency Code</label>
+                    <input type="text" id="newCode" class="w-full border rounded-lg px-3 py-2" placeholder="USD" maxlength="3" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency Name</label>
+                    <input type="text" id="newName" class="w-full border rounded-lg px-3 py-2" placeholder="US Dollar" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Symbol</label>
+                    <input type="text" id="newSymbol" class="w-full border rounded-lg px-3 py-2" placeholder="$" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Exchange Rate (1 HKD = ?)</label>
+                    <input type="number" id="newRate" class="w-full border rounded-lg px-3 py-2" step="0.0001" placeholder="0.128" required>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                        Add Currency
+                    </button>
+                    <button type="button" onclick="closeAddModal()" class="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Base prices in HKD
+        const basePrices = {
+            basic: 720,
+            premium: 1920,
+            enterprise: 4800
+        };
+
+        // Currency data
+        let currencies = [
+            { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$', rate: 1, enabled: true },
+            { code: 'USD', name: 'US Dollar', symbol: '$', rate: 0.128, enabled: true },
+            { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.118, enabled: true },
+            { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.101, enabled: true },
+            { code: 'INR', name: 'Indian Rupee', symbol: '₹', rate: 10.65, enabled: true },
+            { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', rate: 0.172, enabled: true },
+            { code: 'AED', name: 'UAE Dirham', symbol: 'AED', rate: 0.47, enabled: true },
+            { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', rate: 0.918, enabled: true },
+            { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 19.13, enabled: true },
+            { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 0.196, enabled: true },
+            { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', rate: 0.57, enabled: true },
+            { code: 'PHP', name: 'Philippine Peso', symbol: '₱', rate: 7.14, enabled: true },
+        ];
+
+        // Country-currency mappings
+        const countryMappings = [
+            { country: 'India', code: 'IN', currency: 'INR' },
+            { country: 'Hong Kong', code: 'HK', currency: 'HKD' },
+            { country: 'United States', code: 'US', currency: 'USD' },
+            { country: 'United Kingdom', code: 'GB', currency: 'GBP' },
+            { country: 'Singapore', code: 'SG', currency: 'SGD' },
+            { country: 'UAE', code: 'AE', currency: 'AED' },
+            { country: 'Australia', code: 'AU', currency: 'AUD' },
+            { country: 'China', code: 'CN', currency: 'CNY' },
+            { country: 'Japan', code: 'JP', currency: 'JPY' },
+            { country: 'Germany', code: 'DE', currency: 'EUR' },
+            { country: 'France', code: 'FR', currency: 'EUR' },
+            { country: 'Malaysia', code: 'MY', currency: 'MYR' },
+        ];
+
+        function formatPrice(basePrice, rate, symbol, round = true) {
+            const converted = basePrice * rate;
+            const formatted = round ? Math.round(converted) : converted.toFixed(2);
+            return `${symbol} ${Number(formatted).toLocaleString()}`;
+        }
+
+        function renderCurrencyTable() {
+            const tbody = document.getElementById('currencyTable');
+            tbody.innerHTML = currencies.map(curr => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div>
+                            <p class="font-medium">${curr.code}</p>
+                            <p class="text-sm text-gray-500">${curr.name}</p>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-lg font-medium">${curr.symbol}</td>
+                    <td class="px-6 py-4">
+                        <input type="number" value="${curr.rate}" step="0.0001" 
+                            class="w-24 border rounded px-2 py-1 text-sm"
+                            onchange="updateRate('${curr.code}', this.value)"
+                            ${curr.code === 'HKD' ? 'disabled' : ''}>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-indigo-600">
+                        ${formatPrice(basePrices.basic, curr.rate, curr.symbol)}
+                    </td>
+                    <td class="px-6 py-4 font-medium text-indigo-600">
+                        ${formatPrice(basePrices.premium, curr.rate, curr.symbol)}
+                    </td>
+                    <td class="px-6 py-4">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${curr.enabled ? 'checked' : ''} 
+                                class="sr-only peer" 
+                                onchange="toggleCurrency('${curr.code}', this.checked)"
+                                ${curr.code === 'HKD' ? 'disabled' : ''}>
+                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                        </label>
+                    </td>
+                    <td class="px-6 py-4">
+                        ${curr.code !== 'HKD' ? `
+                            <button onclick="deleteCurrency('${curr.code}')" class="text-red-600 hover:text-red-800">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderCountryMappings() {
+            const container = document.getElementById('countryMappings');
+            container.innerHTML = countryMappings.map(map => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="text-lg mr-2">${getCountryFlag(map.code)}</span>
+                        <span class="font-medium">${map.country}</span>
+                    </div>
+                    <select class="border rounded px-2 py-1 text-sm" onchange="updateMapping('${map.code}', this.value)">
+                        ${currencies.filter(c => c.enabled).map(c => 
+                            `<option value="${c.code}" ${c.code === map.currency ? 'selected' : ''}>${c.code}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function getCountryFlag(code) {
+            const flags = {
+                'IN': '🇮🇳', 'HK': '🇭🇰', 'US': '🇺🇸', 'GB': '🇬🇧', 'SG': '🇸🇬',
+                'AE': '🇦🇪', 'AU': '🇦🇺', 'CN': '🇨🇳', 'JP': '🇯🇵', 'DE': '🇩🇪',
+                'FR': '🇫🇷', 'MY': '🇲🇾'
+            };
+            return flags[code] || '🏳️';
+        }
+
+        function updateRate(code, newRate) {
+            const currency = currencies.find(c => c.code === code);
+            if (currency) {
+                currency.rate = parseFloat(newRate);
+                renderCurrencyTable();
+                saveCurrencies();
+            }
+        }
+
+        function toggleCurrency(code, enabled) {
+            const currency = currencies.find(c => c.code === code);
+            if (currency) {
+                currency.enabled = enabled;
+                renderCountryMappings();
+                saveCurrencies();
+            }
+        }
+
+        function deleteCurrency(code) {
+            if (confirm(`Delete ${code}? This cannot be undone.`)) {
+                currencies = currencies.filter(c => c.code !== code);
+                renderCurrencyTable();
+                renderCountryMappings();
+                saveCurrencies();
+            }
+        }
+
+        function updateMapping(countryCode, currencyCode) {
+            const mapping = countryMappings.find(m => m.code === countryCode);
+            if (mapping) {
+                mapping.currency = currencyCode;
+                saveMappings();
+            }
+        }
+
+        function openAddCurrencyModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('addCurrencyForm').reset();
+        }
+
+        document.getElementById('addCurrencyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newCurrency = {
+                code: document.getElementById('newCode').value.toUpperCase(),
+                name: document.getElementById('newName').value,
+                symbol: document.getElementById('newSymbol').value,
+                rate: parseFloat(document.getElementById('newRate').value),
+                enabled: true
+            };
+
+            if (currencies.find(c => c.code === newCurrency.code)) {
+                alert('Currency already exists!');
+                return;
+            }
+
+            currencies.push(newCurrency);
+            renderCurrencyTable();
+            renderCountryMappings();
+            closeAddModal();
+            saveCurrencies();
+        });
+
+        async function fetchLiveRates() {
+            try {
+                // In production, use a real exchange rate API
+                // const response = await fetch('https://api.exchangerate-api.com/v4/latest/HKD');
+                // const data = await response.json();
+                
+                alert('Live rates fetched! In production, this would update from an exchange rate API.');
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+            } catch (error) {
+                alert('Failed to fetch live rates: ' + error.message);
+            }
+        }
+
+        function saveBaseCurrency() {
+            const base = document.getElementById('baseCurrency').value;
+            localStorage.setItem('baseCurrency', base);
+            alert('Base currency saved!');
+        }
+
+        function saveCurrencies() {
+            // In production, save to database
+            localStorage.setItem('currencies', JSON.stringify(currencies));
+            console.log('Currencies saved');
+        }
+
+        function saveMappings() {
+            // In production, save to database
+            localStorage.setItem('countryMappings', JSON.stringify(countryMappings));
+            console.log('Mappings saved');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+            renderCurrencyTable();
+            renderCountryMappings();
+        });
+    </script>
+</body>
+</html>

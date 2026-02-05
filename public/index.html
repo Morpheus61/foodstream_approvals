@@ -814,7 +814,7 @@
                 <h1>Streamline Your <span class="highlight">Payment Approvals</span></h1>
                 <p>Cryptographically secured vouchers with multi-level approval workflows, real-time tracking, and complete audit trails.</p>
                 <div class="hero-buttons">
-                    <a href="/app.html" class="btn-primary">Start Free Trial</a>
+                    <a href="/trial.html" class="btn-primary">Start Free Trial</a>
                     <a href="mailto:sales@foodstream.com.hk?subject=Demo%20Request" class="btn-secondary">Request Demo</a>
                 </div>
             </div>
@@ -965,11 +965,24 @@
         <div class="section-header" style="color: white;">
             <h2>Flexible Pricing for Every Business</h2>
             <p style="color: rgba(255,255,255,0.9);">Choose the plan that fits your needs. All plans include core security features.</p>
+            <div id="currency-selector" style="margin-top: 1rem;">
+                <select id="pricing-currency" onchange="updatePricingDisplay()" style="padding: 0.5rem 1rem; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer;">
+                    <option value="HKD" style="color: black;">🇭🇰 HKD - Hong Kong Dollar</option>
+                    <option value="USD" style="color: black;">🇺🇸 USD - US Dollar</option>
+                    <option value="EUR" style="color: black;">🇪🇺 EUR - Euro</option>
+                    <option value="GBP" style="color: black;">🇬🇧 GBP - British Pound</option>
+                    <option value="INR" style="color: black;">🇮🇳 INR - Indian Rupee</option>
+                    <option value="SGD" style="color: black;">🇸🇬 SGD - Singapore Dollar</option>
+                    <option value="AED" style="color: black;">🇦🇪 AED - UAE Dirham</option>
+                    <option value="AUD" style="color: black;">🇦🇺 AUD - Australian Dollar</option>
+                </select>
+                <span id="detected-location" style="margin-left: 1rem; font-size: 0.875rem; opacity: 0.8;"></span>
+            </div>
         </div>
         <div class="pricing-grid">
             <div class="pricing-card">
                 <div class="plan-name">Trial</div>
-                <div class="plan-price">HK$ 0 <span>/month</span></div>
+                <div class="plan-price" data-plan="trial"><span class="currency-symbol">HK$</span> <span class="price-value">0</span> <span>/month</span></div>
                 <p>30 days free trial</p>
                 <ul class="plan-features">
                     <li>✓ 1 Company</li>
@@ -979,12 +992,12 @@
                     <li>✓ Digital Signatures</li>
                     <li>✓ Basic Reporting</li>
                 </ul>
-                <a href="/app.html" class="plan-button">Start Free Trial</a>
+                <a href="/trial.html" class="plan-button">Start Free Trial</a>
             </div>
 
             <div class="pricing-card">
                 <div class="plan-name">Basic</div>
-                <div class="plan-price">HK$ 720 <span>/month</span></div>
+                <div class="plan-price" data-plan="basic" data-base-price="720"><span class="currency-symbol">HK$</span> <span class="price-value">720</span> <span>/month</span></div>
                 <p>Perfect for small teams</p>
                 <ul class="plan-features">
                     <li>✓ 3 Companies</li>
@@ -995,12 +1008,12 @@
                     <li>✓ Advanced Reporting</li>
                     <li>✓ Email Support</li>
                 </ul>
-                <a href="/app.html" class="plan-button">Get Started</a>
+                <a href="/trial.html?plan=basic" class="plan-button">Get Started</a>
             </div>
 
             <div class="pricing-card featured">
                 <div class="plan-name">Premium</div>
-                <div class="plan-price">HK$ 1,920 <span>/month</span></div>
+                <div class="plan-price" data-plan="premium" data-base-price="1920"><span class="currency-symbol">HK$</span> <span class="price-value">1,920</span> <span>/month</span></div>
                 <p>Most popular choice</p>
                 <ul class="plan-features">
                     <li>✓ 10 Companies</li>
@@ -1012,7 +1025,7 @@
                     <li>✓ Priority Support</li>
                     <li>✓ Custom Workflows</li>
                 </ul>
-                <a href="/app.html" class="plan-button">Get Started</a>
+                <a href="/trial.html?plan=premium" class="plan-button">Get Started</a>
             </div>
 
             <div class="pricing-card">
@@ -1041,7 +1054,7 @@
             <h2>Ready to Transform Your Payment Approvals?</h2>
             <p>Join hundreds of businesses that trust FoodStream Approvals Flow for secure, efficient payment management.</p>
             <div class="hero-buttons">
-                <a href="/app.html" class="btn-primary">Start Free Trial - No Credit Card Required</a>
+                <a href="/trial.html" class="btn-primary">Start Free Trial - No Credit Card Required</a>
                 <a href="mailto:sales@foodstream.com.hk?subject=Demo%20Request" class="btn-secondary">Schedule a Demo</a>
             </div>
         </div>
@@ -1122,6 +1135,122 @@
 
         document.querySelectorAll('.feature-card, .workflow-step, .pricing-card').forEach(el => {
             observer.observe(el);
+        });
+
+        // =====================================================
+        // GEO-LOCATION CURRENCY DETECTION
+        // =====================================================
+        
+        // Exchange rates (base: HKD)
+        const exchangeRates = {
+            HKD: { rate: 1, symbol: 'HK$', name: 'Hong Kong Dollar' },
+            USD: { rate: 0.128, symbol: '$', name: 'US Dollar' },
+            EUR: { rate: 0.118, symbol: '€', name: 'Euro' },
+            GBP: { rate: 0.101, symbol: '£', name: 'British Pound' },
+            INR: { rate: 10.65, symbol: '₹', name: 'Indian Rupee' },
+            SGD: { rate: 0.172, symbol: 'S$', name: 'Singapore Dollar' },
+            AED: { rate: 0.47, symbol: 'AED ', name: 'UAE Dirham' },
+            AUD: { rate: 0.196, symbol: 'A$', name: 'Australian Dollar' },
+            CNY: { rate: 0.918, symbol: '¥', name: 'Chinese Yuan' },
+            JPY: { rate: 19.13, symbol: '¥', name: 'Japanese Yen' },
+            MYR: { rate: 0.57, symbol: 'RM ', name: 'Malaysian Ringgit' },
+            PHP: { rate: 7.14, symbol: '₱', name: 'Philippine Peso' }
+        };
+
+        // Country to currency mapping
+        const countryToCurrency = {
+            'IN': 'INR', 'HK': 'HKD', 'US': 'USD', 'GB': 'GBP', 'SG': 'SGD',
+            'AE': 'AED', 'AU': 'AUD', 'CN': 'CNY', 'JP': 'JPY', 'MY': 'MYR',
+            'PH': 'PHP', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
+            'NL': 'EUR', 'BE': 'EUR', 'AT': 'EUR', 'IE': 'EUR', 'PT': 'EUR'
+        };
+
+        // Base prices in HKD
+        const basePricesHKD = {
+            trial: 0,
+            basic: 720,
+            premium: 1920
+        };
+
+        // Detect user's location and set currency
+        async function detectUserLocation() {
+            try {
+                const services = [
+                    'https://ipapi.co/json/',
+                    'https://ip-api.com/json/'
+                ];
+
+                for (const service of services) {
+                    try {
+                        const response = await fetch(service, { signal: AbortSignal.timeout(3000) });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const countryCode = data.country_code || data.countryCode || data.country;
+                            
+                            if (countryCode) {
+                                const currency = countryToCurrency[countryCode] || 'HKD';
+                                const select = document.getElementById('pricing-currency');
+                                if (select) {
+                                    select.value = currency;
+                                    updatePricingDisplay();
+                                    
+                                    const locationText = document.getElementById('detected-location');
+                                    if (locationText) {
+                                        const countryName = data.country_name || data.country || countryCode;
+                                        locationText.textContent = `📍 Detected: ${countryName}`;
+                                    }
+                                }
+                                
+                                // Save preference
+                                localStorage.setItem('preferredCurrency', currency);
+                                localStorage.setItem('detectedCountry', countryCode);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Geolocation service failed, trying next...');
+                    }
+                }
+            } catch (error) {
+                console.error('Location detection failed:', error);
+            }
+            
+            // Check saved preference or default to HKD
+            const saved = localStorage.getItem('preferredCurrency');
+            if (saved && exchangeRates[saved]) {
+                document.getElementById('pricing-currency').value = saved;
+                updatePricingDisplay();
+            }
+        }
+
+        // Update pricing display based on selected currency
+        function updatePricingDisplay() {
+            const select = document.getElementById('pricing-currency');
+            const currency = select ? select.value : 'HKD';
+            const currencyData = exchangeRates[currency] || exchangeRates.HKD;
+
+            // Update all pricing cards
+            document.querySelectorAll('.plan-price[data-plan]').forEach(priceEl => {
+                const plan = priceEl.dataset.plan;
+                const basePrice = basePricesHKD[plan];
+                
+                if (basePrice !== undefined) {
+                    const convertedPrice = Math.round(basePrice * currencyData.rate);
+                    const symbolEl = priceEl.querySelector('.currency-symbol');
+                    const valueEl = priceEl.querySelector('.price-value');
+                    
+                    if (symbolEl) symbolEl.textContent = currencyData.symbol;
+                    if (valueEl) valueEl.textContent = convertedPrice.toLocaleString();
+                }
+            });
+
+            // Save preference
+            localStorage.setItem('preferredCurrency', currency);
+        }
+
+        // Initialize currency detection on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            detectUserLocation();
         });
     </script>
 </body>

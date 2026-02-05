@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Management - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar { transition: width 0.3s ease; }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">🍕 FoodStream</h1>
+                <p class="text-sm text-gray-500">Admin Dashboard</p>
+            </div>
+            <nav class="mt-6">
+                <a href="/admin/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>Dashboard
+                </a>
+                <a href="/admin/subscriptions.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="credit-card" class="w-5 h-5 mr-3"></i>Subscriptions
+                </a>
+                <a href="/admin/pricing.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="tags" class="w-5 h-5 mr-3"></i>Pricing Plans
+                </a>
+                <a href="/admin/users.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i>Users
+                </a>
+                <a href="/admin/licenses.html" class="sidebar-link active flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="key" class="w-5 h-5 mr-3"></i>License Keys
+                </a>
+                <a href="/admin/companies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="building-2" class="w-5 h-5 mr-3"></i>Companies
+                </a>
+                <a href="/admin/currencies.html" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                    <i data-lucide="coins" class="w-5 h-5 mr-3"></i>Currencies
+                </a>
+                <div class="border-t mt-4 pt-4">
+                    <a href="/" class="sidebar-link flex items-center px-6 py-3 text-gray-700">
+                        <i data-lucide="globe" class="w-5 h-5 mr-3"></i>View Website
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">License Key Management</h1>
+                    <p class="text-gray-500">Generate and manage license keys for customers</p>
+                </div>
+                <button onclick="openGenerateModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center">
+                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                    Generate License
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Total Licenses</p>
+                    <p id="statTotal" class="text-2xl font-bold text-gray-800">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Active</p>
+                    <p id="statActive" class="text-2xl font-bold text-green-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Pending Activation</p>
+                    <p id="statPending" class="text-2xl font-bold text-yellow-600">--</p>
+                </div>
+                <div class="card p-4">
+                    <p class="text-sm text-gray-500">Expired</p>
+                    <p id="statExpired" class="text-2xl font-bold text-red-600">--</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="filterStatus" class="w-full border rounded-lg px-3 py-2" onchange="filterLicenses()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="expired">Expired</option>
+                            <option value="revoked">Revoked</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                        <select id="filterPlan" class="w-full border rounded-lg px-3 py-2" onchange="filterLicenses()">
+                            <option value="">All Plans</option>
+                            <option value="trial">Trial</option>
+                            <option value="basic">Basic</option>
+                            <option value="premium">Premium</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" id="searchQuery" placeholder="License key or email..." class="w-full border rounded-lg px-3 py-2" oninput="filterLicenses()">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="clearFilters()" class="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Licenses Table -->
+            <div class="card overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">License Key</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licensesTable" class="divide-y divide-gray-200">
+                        <!-- Data loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Generate License Modal -->
+    <div id="generateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Generate License Key</h3>
+                <button onclick="closeGenerateModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="generateForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                    <select id="genPlan" class="w-full border rounded-lg px-3 py-2" required>
+                        <option value="trial">Trial (30 days free)</option>
+                        <option value="basic">Basic</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Duration (months)</label>
+                    <select id="genDuration" class="w-full border rounded-lg px-3 py-2">
+                        <option value="1">1 Month</option>
+                        <option value="3">3 Months</option>
+                        <option value="6">6 Months</option>
+                        <option value="12" selected>12 Months</option>
+                        <option value="24">24 Months</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Email (optional)</label>
+                    <input type="email" id="genEmail" class="w-full border rounded-lg px-3 py-2" placeholder="customer@example.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="genNotes" class="w-full border rounded-lg px-3 py-2" rows="2" placeholder="Internal notes..."></textarea>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                        Generate
+                    </button>
+                    <button type="button" onclick="closeGenerateModal()" class="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generated Key Display Modal -->
+    <div id="keyDisplayModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md text-center">
+            <div class="text-4xl mb-4">🔑</div>
+            <h3 class="text-xl font-bold mb-2">License Generated!</h3>
+            <p class="text-gray-600 mb-4">Copy and share this key with your customer:</p>
+            <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                <code id="generatedKey" class="text-lg font-mono font-bold text-indigo-600">PRM-XXXXX-XXXXX-XXXX-XXXX</code>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="copyKey()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
+                    <i data-lucide="copy" class="w-4 h-4 mr-2"></i>
+                    Copy to Clipboard
+                </button>
+                <button onclick="closeKeyDisplay()" class="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        const API_BASE = window.location.origin + '/api';
+        let allLicenses = [];
+
+        // Sample licenses for demo
+        const sampleLicenses = [
+            { id: 1, key: 'PRM-A1B2C-D3E4F-G5H6-I7J8', plan: 'premium', status: 'active', email: 'admin@abc.com', company: 'ABC Corp', expiresAt: '2027-02-05', createdAt: '2026-02-05' },
+            { id: 2, key: 'BSC-K9L0M-N1O2P-Q3R4-S5T6', plan: 'basic', status: 'active', email: 'info@xyz.com', company: 'XYZ Ltd', expiresAt: '2027-01-15', createdAt: '2026-01-15' },
+            { id: 3, key: 'TRL-U7V8W-X9Y0Z-A1B2-C3D4', plan: 'trial', status: 'active', email: 'demo@example.com', company: 'Demo Co', expiresAt: '2026-03-07', createdAt: '2026-02-05' },
+            { id: 4, key: 'ENT-E5F6G-H7I8J-K9L0-M1N2', plan: 'enterprise', status: 'active', email: 'admin@global.com', company: 'Global Inc', expiresAt: '2028-02-05', createdAt: '2026-02-05' },
+            { id: 5, key: 'BSC-O3P4Q-R5S6T-U7V8-W9X0', plan: 'basic', status: 'pending', email: null, company: null, expiresAt: '2027-02-05', createdAt: '2026-02-05' },
+            { id: 6, key: 'PRM-Y1Z2A-B3C4D-E5F6-G7H8', plan: 'premium', status: 'expired', email: 'old@expired.com', company: 'Old Corp', expiresAt: '2025-12-01', createdAt: '2024-12-01' },
+        ];
+
+        function getStatusBadge(status) {
+            const styles = {
+                active: 'bg-green-100 text-green-700',
+                pending: 'bg-yellow-100 text-yellow-700',
+                expired: 'bg-red-100 text-red-700',
+                revoked: 'bg-gray-100 text-gray-700'
+            };
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.pending}">${status}</span>`;
+        }
+
+        function getPlanBadge(plan) {
+            const styles = {
+                trial: 'bg-blue-100 text-blue-700',
+                basic: 'bg-purple-100 text-purple-700',
+                premium: 'bg-indigo-100 text-indigo-700',
+                enterprise: 'bg-pink-100 text-pink-700'
+            };
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[plan]}">${plan}</span>`;
+        }
+
+        async function loadLicenses() {
+            try {
+                // In production, fetch from API
+                allLicenses = sampleLicenses;
+                renderLicenses();
+                updateStats();
+            } catch (error) {
+                console.error('Failed to load licenses:', error);
+            }
+        }
+
+        function renderLicenses() {
+            const filtered = getFilteredLicenses();
+            const tbody = document.getElementById('licensesTable');
+            
+            tbody.innerHTML = filtered.map(lic => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <code class="text-sm font-mono bg-gray-100 px-2 py-1 rounded">${lic.key}</code>
+                    </td>
+                    <td class="px-6 py-4">${getPlanBadge(lic.plan)}</td>
+                    <td class="px-6 py-4">${getStatusBadge(lic.status)}</td>
+                    <td class="px-6 py-4">
+                        ${lic.email ? `
+                            <div>
+                                <p class="font-medium">${lic.company || 'N/A'}</p>
+                                <p class="text-sm text-gray-500">${lic.email}</p>
+                            </div>
+                        ` : '<span class="text-gray-400">Not assigned</span>'}
+                    </td>
+                    <td class="px-6 py-4 text-sm">${lic.expiresAt}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <button onclick="copyLicenseKey('${lic.key}')" class="text-gray-600 hover:text-gray-800" title="Copy">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="viewLicense(${lic.id})" class="text-indigo-600 hover:text-indigo-800" title="View Details">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            ${lic.status === 'active' ? `
+                                <button onclick="revokeLicense(${lic.id})" class="text-red-600 hover:text-red-800" title="Revoke">
+                                    <i data-lucide="ban" class="w-4 h-4"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        function getFilteredLicenses() {
+            const status = document.getElementById('filterStatus').value;
+            const plan = document.getElementById('filterPlan').value;
+            const search = document.getElementById('searchQuery').value.toLowerCase();
+
+            return allLicenses.filter(lic => {
+                if (status && lic.status !== status) return false;
+                if (plan && lic.plan !== plan) return false;
+                if (search) {
+                    const searchable = `${lic.key} ${lic.email || ''} ${lic.company || ''}`.toLowerCase();
+                    if (!searchable.includes(search)) return false;
+                }
+                return true;
+            });
+        }
+
+        function filterLicenses() {
+            renderLicenses();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPlan').value = '';
+            document.getElementById('searchQuery').value = '';
+            renderLicenses();
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allLicenses.length;
+            document.getElementById('statActive').textContent = allLicenses.filter(l => l.status === 'active').length;
+            document.getElementById('statPending').textContent = allLicenses.filter(l => l.status === 'pending').length;
+            document.getElementById('statExpired').textContent = allLicenses.filter(l => l.status === 'expired').length;
+        }
+
+        function openGenerateModal() {
+            document.getElementById('generateModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeGenerateModal() {
+            document.getElementById('generateModal').classList.add('hidden');
+            document.getElementById('generateForm').reset();
+        }
+
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const plan = document.getElementById('genPlan').value;
+            const prefix = { trial: 'TRL', basic: 'BSC', premium: 'PRM', enterprise: 'ENT' }[plan];
+            
+            // Generate random key
+            const segments = [];
+            for (let i = 0; i < 4; i++) {
+                segments.push(Math.random().toString(36).substring(2, 6).toUpperCase());
+            }
+            const newKey = `${prefix}-${segments.join('-')}`;
+            
+            document.getElementById('generatedKey').textContent = newKey;
+            closeGenerateModal();
+            document.getElementById('keyDisplayModal').classList.remove('hidden');
+            lucide.createIcons();
+            
+            // In production, save to database
+            console.log('Generated license:', {
+                key: newKey,
+                plan: plan,
+                duration: document.getElementById('genDuration').value,
+                email: document.getElementById('genEmail').value,
+                notes: document.getElementById('genNotes').value
+            });
+        });
+
+        function closeKeyDisplay() {
+            document.getElementById('keyDisplayModal').classList.add('hidden');
+            loadLicenses(); // Refresh list
+        }
+
+        function copyKey() {
+            const key = document.getElementById('generatedKey').textContent;
+            navigator.clipboard.writeText(key);
+            alert('License key copied to clipboard!');
+        }
+
+        function copyLicenseKey(key) {
+            navigator.clipboard.writeText(key);
+            alert('Copied: ' + key);
+        }
+
+        function viewLicense(id) {
+            const lic = allLicenses.find(l => l.id === id);
+            if (lic) {
+                alert(`License Details:\n\nKey: ${lic.key}\nPlan: ${lic.plan}\nStatus: ${lic.status}\nExpires: ${lic.expiresAt}`);
+            }
+        }
+
+        function revokeLicense(id) {
+            if (confirm('Are you sure you want to revoke this license? This cannot be undone.')) {
+                // In production, call API
+                const lic = allLicenses.find(l => l.id === id);
+                if (lic) lic.status = 'revoked';
+                renderLicenses();
+                updateStats();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadLicenses);
+    </script>
+</body>
+</html>
