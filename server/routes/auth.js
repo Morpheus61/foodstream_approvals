@@ -59,11 +59,17 @@ router.post('/login', authLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
         
+        if (!username || !password) {
+            return res.status(400).json({ success: false, error: 'Username and password are required' });
+        }
+        
         const supabase = getSupabaseClient();
         
+        // Use left join (licensed_orgs) instead of inner join (licensed_orgs!org_id)
+        // This ensures users without an org can still log in (e.g., super_admin)
         const { data: user, error } = await supabase
             .from('users')
-            .select('*, licensed_orgs!org_id(*)')
+            .select('*, licensed_orgs(*)') 
             .eq('username', username)
             .eq('status', 'active')
             .single();
@@ -78,6 +84,12 @@ router.post('/login', authLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
         
+        // Check JWT_SECRET is configured
+        if (!process.env.JWT_SECRET) {
+            logger.error('JWT_SECRET is not configured');
+            return res.status(500).json({ success: false, error: 'Server configuration error' });
+        }
+        
         // Generate JWT
         const token = jwt.sign(
             { userId: user.id, orgId: user.org_id, role: user.role },
@@ -85,11 +97,15 @@ router.post('/login', authLimiter, async (req, res) => {
             { expiresIn: '24h' }
         );
         
-        // Update last login
-        await supabase
-            .from('users')
-            .update({ last_login: new Date().toISOString(), last_login_ip: req.ip })
-            .eq('id', user.id);
+        // Update last login (non-blocking, don't fail login if this fails)
+        try {
+            await supabase
+                .from('users')
+                .update({ last_login: new Date().toISOString(), last_login_ip: req.ip })
+                .eq('id', user.id);
+        } catch (updateError) {
+            logger.error('Failed to update last login', { error: updateError.message });
+        }
         
         logger.audit('user_login', user.id, { username });
         
@@ -106,8 +122,8 @@ router.post('/login', authLimiter, async (req, res) => {
             }
         });
     } catch (error) {
-        logger.error('Login error', { error: error.message });
-        res.status(500).json({ success: false, error: error.message });
+        logger.error('Login error', { error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, error: 'Login failed. Please try again.' });
     }
 });
 
