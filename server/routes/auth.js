@@ -74,14 +74,20 @@ router.post('/login', authLimiter, async (req, res) => {
             .eq('status', 'active')
             .single();
         
-        if (error || !user) {
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+        if (error) {
+            logger.error('Database query error', { error: error.message, code: error.code });
+            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'db_error' });
+        }
+        
+        if (!user) {
+            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'no_user' });
         }
         
         const isValid = await encryptionUtil.verifyPassword(password, user.password_hash);
         
         if (!isValid) {
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+            logger.error('Password verification failed', { username, hashPrefix: user.password_hash?.substring(0, 10) });
+            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'pwd_fail' });
         }
         
         // Check JWT_SECRET is configured
