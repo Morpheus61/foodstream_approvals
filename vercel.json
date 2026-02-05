@@ -16,6 +16,14 @@
       "dest": "/server/index.js"
     },
     {
+      "src": "/admin$",
+      "dest": "/public/admin/index.html"
+    },
+    {
+      "src": "/admin/$",
+      "dest": "/public/admin/index.html"
+    },
+    {
       "src": "/admin/(.*)",
       "dest": "/public/admin/$1"
     },
