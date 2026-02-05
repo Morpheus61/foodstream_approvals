@@ -1,0 +1,44 @@
+/* FoodStream Approvals Flow - Custom Styles */
+
+/* Base variables already defined in HTML, this file for additional customizations */
+
+/* Form inputs */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color, #1e40af);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+/* Button hover effects */
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Card shadows */
+.card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Toast animations */
+.toast-enter {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .card {
+        padding: 1rem;
+    }
+}
