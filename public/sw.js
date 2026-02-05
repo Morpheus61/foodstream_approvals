@@ -1,14 +1,14 @@
 // Service Worker for PWA
-const CACHE_NAME = 'payment-approval-v2.0.0';
+const CACHE_NAME = 'foodstream-approval-v2.0.1';
 const STATIC_CACHE = [
     '/',
     '/index.html',
+    '/app.html',
     '/css/custom.css',
-    '/js/app.js',
     '/manifest.json',
-    'https://cdn.tailwindcss.com',
-    'https://unpkg.com/react@18/umd/react.production.min.js',
-    'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'
+    '/images/web-app-manifest-192x192.png',
+    '/images/web-app-manifest-512x512.png',
+    '/images/favicon-96x96.png'
 ];
 
 // Install event
