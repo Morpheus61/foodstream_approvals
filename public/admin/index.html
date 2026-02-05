@@ -234,25 +234,44 @@
 
         const API_BASE = window.location.origin + '/api';
 
-        // Check admin authentication
+        // Check admin authentication - REAL AUTH
         async function checkAuth() {
-            const token = localStorage.getItem('adminToken');
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
             if (!token) {
-                // For development, allow access - in production, redirect to login
-                console.log('No admin token found. In production, redirect to admin login.');
-                // window.location.href = '/admin/login.html';
+                window.location.href = '/app.html';
+                return false;
             }
+
+            // Check if user is super_admin or org_admin
+            if (user.role !== 'super_admin' && user.role !== 'org_admin') {
+                alert('Access denied. Admin privileges required.');
+                window.location.href = '/app.html';
+                return false;
+            }
+
+            // Update welcome message
+            document.querySelector('main .text-gray-500').textContent = `Welcome back, ${user.fullName || user.username}!`;
+            
+            return true;
         }
 
-        // Load dashboard stats
+        // Load dashboard stats - REAL DATA from Supabase
         async function loadDashboardStats() {
             try {
                 const response = await fetch(`${API_BASE}/admin/dashboard/stats`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
                     }
                 });
                 
+                if (response.status === 401) {
+                    window.location.href = '/app.html';
+                    return;
+                }
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success) {
@@ -261,24 +280,16 @@
                         document.getElementById('stat-revenue').textContent = formatCurrency(data.stats.monthlyRevenue || 0);
                         document.getElementById('stat-trials').textContent = data.stats.freeTrials || 0;
                         document.getElementById('expiring-trials').textContent = data.stats.expiringTrials || 0;
+                        document.getElementById('admin-currency').textContent = `Orgs: ${data.stats.totalOrgs || 0} | Companies: ${data.stats.totalCompanies || 0}`;
                     }
                 } else {
-                    // Use placeholder data for demo
-                    loadPlaceholderStats();
+                    console.error('Failed to load stats');
+                    document.getElementById('admin-currency').textContent = 'Error loading stats';
                 }
             } catch (error) {
                 console.error('Failed to load stats:', error);
-                loadPlaceholderStats();
+                document.getElementById('admin-currency').textContent = 'Connection error';
             }
-        }
-
-        function loadPlaceholderStats() {
-            document.getElementById('stat-users').textContent = '156';
-            document.getElementById('stat-subscriptions').textContent = '89';
-            document.getElementById('stat-revenue').textContent = 'HK$ 124,500';
-            document.getElementById('stat-trials').textContent = '34';
-            document.getElementById('expiring-trials').textContent = '8';
-            document.getElementById('admin-currency').textContent = 'Base: HKD';
         }
 
         function formatCurrency(amount, currency = 'HKD') {
@@ -286,58 +297,92 @@
             return `${symbols[currency] || currency} ${amount.toLocaleString()}`;
         }
 
-        // Load recent subscriptions
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Load recent subscriptions - REAL DATA
         async function loadRecentSubscriptions() {
             const container = document.getElementById('recent-subscriptions');
             
-            // Placeholder data for demo
-            const subscriptions = [
-                { company: 'ABC Corp', plan: 'Premium', amount: 'HK$ 1,920', date: '2 hours ago', status: 'active' },
-                { company: 'XYZ Ltd', plan: 'Basic', amount: 'HK$ 720', date: '5 hours ago', status: 'active' },
-                { company: 'Demo Co', plan: 'Trial', amount: 'Free', date: '1 day ago', status: 'trial' },
-                { company: 'Tech Inc', plan: 'Enterprise', amount: 'Custom', date: '2 days ago', status: 'active' }
-            ];
+            try {
+                const response = await fetch(`${API_BASE}/admin/subscriptions/recent?limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            container.innerHTML = subscriptions.map(sub => `
-                <div class="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                        <p class="font-medium">${sub.company}</p>
-                        <p class="text-sm text-gray-500">${sub.plan} • ${sub.date}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-medium">${sub.amount}</p>
-                        <span class="text-xs px-2 py-1 rounded-full ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
-                            ${sub.status}
-                        </span>
-                    </div>
-                </div>
-            `).join('');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.subscriptions.length > 0) {
+                        container.innerHTML = data.subscriptions.map(sub => `
+                            <div class="flex items-center justify-between py-2 border-b last:border-0">
+                                <div>
+                                    <p class="font-medium">${sub.company || 'Unknown'}</p>
+                                    <p class="text-sm text-gray-500">${sub.plan} • ${formatTimeAgo(sub.createdAt)}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium text-sm">${sub.email || ''}</p>
+                                    <span class="text-xs px-2 py-1 rounded-full ${sub.status === 'active' ? 'bg-green-100 text-green-700' : sub.status === 'trial' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}">
+                                        ${sub.status}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500 text-center py-4">No subscriptions yet</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load subscriptions:', error);
+                container.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load</p>';
+            }
         }
 
-        // Load recent activity
+        // Load recent activity - REAL DATA
         async function loadRecentActivity() {
             const container = document.getElementById('recent-activity');
             
-            // Placeholder data for demo
-            const activities = [
-                { icon: 'user-plus', text: 'New user registered: john@example.com', time: '10 min ago', color: 'text-green-600' },
-                { icon: 'credit-card', text: 'Subscription upgraded: ABC Corp to Premium', time: '1 hour ago', color: 'text-blue-600' },
-                { icon: 'key', text: 'License generated: PRM-XXXXX-XXXXX', time: '2 hours ago', color: 'text-purple-600' },
-                { icon: 'alert-circle', text: 'Trial expired: Demo Company', time: '5 hours ago', color: 'text-orange-600' }
-            ];
+            try {
+                const response = await fetch(`${API_BASE}/admin/activity/recent?limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            container.innerHTML = activities.map(act => `
-                <div class="flex items-start space-x-3 py-2 border-b last:border-0">
-                    <i data-lucide="${act.icon}" class="w-5 h-5 ${act.color} mt-1"></i>
-                    <div class="flex-1">
-                        <p class="text-sm">${act.text}</p>
-                        <p class="text-xs text-gray-400">${act.time}</p>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Re-initialize icons for dynamic content
-            lucide.createIcons();
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.activities.length > 0) {
+                        container.innerHTML = data.activities.map(act => `
+                            <div class="flex items-start space-x-3 py-2 border-b last:border-0">
+                                <i data-lucide="${act.icon}" class="w-5 h-5 ${act.color} mt-1"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm">${act.text}</p>
+                                    <p class="text-xs text-gray-400">${formatTimeAgo(act.time)}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        // Re-initialize icons for dynamic content
+                        lucide.createIcons();
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent activity</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load activity:', error);
+                container.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load</p>';
+            }
         }
 
         function logout() {
@@ -347,12 +392,21 @@
             window.location.href = '/';
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadDashboardStats();
-            loadRecentSubscriptions();
-            loadRecentActivity();
+        // Initialize - with REAL authentication
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuthed = await checkAuth();
+            if (isAuthed) {
+                loadDashboardStats();
+                loadRecentSubscriptions();
+                loadRecentActivity();
+                
+                // Auto-refresh every 30 seconds
+                setInterval(() => {
+                    loadDashboardStats();
+                    loadRecentSubscriptions();
+                    loadRecentActivity();
+                }, 30000);
+            }
         });
     </script>
 </body>

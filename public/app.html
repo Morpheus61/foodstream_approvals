@@ -238,10 +238,17 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        showToast('Login successful!', 'success');
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        onLogin(data.user);
+                        
+                        // Redirect admins directly to Admin Dashboard
+                        if (data.user.role === 'super_admin' || data.user.role === 'org_admin') {
+                            showToast('Welcome Admin! Redirecting to Dashboard...', 'success');
+                            window.location.href = '/admin/';
+                        } else {
+                            showToast('Login successful!', 'success');
+                            onLogin(data.user);
+                        }
                     } else {
                         showToast(data.error || 'Login failed', 'error');
                     }
@@ -360,7 +367,15 @@
                 const token = localStorage.getItem('token');
                 const savedUser = localStorage.getItem('user');
                 if (token && savedUser) {
-                    setUser(JSON.parse(savedUser));
+                    const parsedUser = JSON.parse(savedUser);
+                    
+                    // Redirect admins directly to Admin Dashboard
+                    if (parsedUser.role === 'super_admin' || parsedUser.role === 'org_admin') {
+                        window.location.href = '/admin/';
+                        return;
+                    }
+                    
+                    setUser(parsedUser);
                 }
             }, []);
             
