@@ -73,20 +73,14 @@ router.post('/login', authLimiter, async (req, res) => {
             .eq('status', 'active')
             .single();
         
-        if (error) {
-            logger.error('Database query error', { error: error.message, code: error.code, details: error.details });
-            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'db_error', msg: error.message });
-        }
-        
-        if (!user) {
-            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'no_user' });
+        if (error || !user) {
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
         
         const isValid = await encryptionUtil.verifyPassword(password, user.password_hash);
         
         if (!isValid) {
-            logger.error('Password verification failed', { username, hashPrefix: user.password_hash?.substring(0, 10) });
-            return res.status(401).json({ success: false, error: 'Invalid credentials', debug: 'pwd_fail' });
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
         
         // Fetch org separately if user has org_id
