@@ -107,15 +107,15 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
     const options = {
         body: event.data ? event.data.text() : 'New notification',
-        icon: '/images/icon-192x192.png',
-        badge: '/images/badge-72x72.png',
+        icon: '/images/web-app-manifest-192x192.png',
+        badge: '/images/favicon-96x96.png',
         vibrate: [200, 100, 200],
         tag: 'payment-approval',
         requireInteraction: true
     };
     
     event.waitUntil(
-        self.registration.showNotification('Payment Approval System', options)
+        self.registration.showNotification('FoodStream Approvals', options)
     );
 });
 

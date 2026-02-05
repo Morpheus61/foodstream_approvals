@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 /**
  * Encryption Utility for sensitive data (SMS credentials, API keys)
@@ -59,31 +60,29 @@ class EncryptionUtil {
     /**
      * Hash password with bcrypt
      */
-    static async hashPassword(password) {
-        const bcrypt = require('bcrypt');
-        const saltRounds = 10;
+    async hashPassword(password) {
+        const saltRounds = 12;
         return await bcrypt.hash(password, saltRounds);
     }
     
     /**
      * Verify password
      */
-    static async verifyPassword(password, hash) {
-        const bcrypt = require('bcrypt');
+    async verifyPassword(password, hash) {
         return await bcrypt.compare(password, hash);
     }
     
     /**
      * Generate random token
      */
-    static generateToken(length = 32) {
+    generateToken(length = 32) {
         return crypto.randomBytes(length).toString('hex');
     }
     
     /**
      * Generate OTP
      */
-    static generateOTP(length = 6) {
+    generateOTP(length = 6) {
         const digits = '0123456789';
         let otp = '';
         
