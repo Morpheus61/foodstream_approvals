@@ -154,13 +154,25 @@
             </div>
             <form id="generateForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Type *</label>
                     <select id="genPlan" class="w-full border rounded-lg px-3 py-2" required>
                         <option value="trial">Trial (30 days free)</option>
                         <option value="basic">Basic</option>
                         <option value="premium">Premium</option>
                         <option value="enterprise">Enterprise</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                    <input type="text" id="genName" class="w-full border rounded-lg px-3 py-2" placeholder="John Smith" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Email *</label>
+                    <input type="email" id="genEmail" class="w-full border rounded-lg px-3 py-2" placeholder="customer@example.com" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                    <input type="text" id="genCompany" class="w-full border rounded-lg px-3 py-2" placeholder="Acme Corp">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Duration (months)</label>
@@ -173,15 +185,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Email (optional)</label>
-                    <input type="email" id="genEmail" class="w-full border rounded-lg px-3 py-2" placeholder="customer@example.com">
-                </div>
-                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                     <textarea id="genNotes" class="w-full border rounded-lg px-3 py-2" rows="2" placeholder="Internal notes..."></textarea>
                 </div>
+                <div id="genError" class="text-red-600 text-sm hidden"></div>
                 <div class="flex space-x-3">
-                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                    <button type="submit" id="genSubmitBtn" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
                         Generate
                     </button>
                     <button type="button" onclick="closeGenerateModal()" class="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
@@ -219,22 +228,31 @@
         const API_BASE = window.location.origin + '/api';
         let allLicenses = [];
 
-        // Sample licenses for demo
-        const sampleLicenses = [
-            { id: 1, key: 'PRM-A1B2C-D3E4F-G5H6-I7J8', plan: 'premium', status: 'active', email: 'admin@abc.com', company: 'ABC Corp', expiresAt: '2027-02-05', createdAt: '2026-02-05' },
-            { id: 2, key: 'BSC-K9L0M-N1O2P-Q3R4-S5T6', plan: 'basic', status: 'active', email: 'info@xyz.com', company: 'XYZ Ltd', expiresAt: '2027-01-15', createdAt: '2026-01-15' },
-            { id: 3, key: 'TRL-U7V8W-X9Y0Z-A1B2-C3D4', plan: 'trial', status: 'active', email: 'demo@example.com', company: 'Demo Co', expiresAt: '2026-03-07', createdAt: '2026-02-05' },
-            { id: 4, key: 'ENT-E5F6G-H7I8J-K9L0-M1N2', plan: 'enterprise', status: 'active', email: 'admin@global.com', company: 'Global Inc', expiresAt: '2028-02-05', createdAt: '2026-02-05' },
-            { id: 5, key: 'BSC-O3P4Q-R5S6T-U7V8-W9X0', plan: 'basic', status: 'pending', email: null, company: null, expiresAt: '2027-02-05', createdAt: '2026-02-05' },
-            { id: 6, key: 'PRM-Y1Z2A-B3C4D-E5F6-G7H8', plan: 'premium', status: 'expired', email: 'old@expired.com', company: 'Old Corp', expiresAt: '2025-12-01', createdAt: '2024-12-01' },
-        ];
+        function getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function checkAdminAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/app.html'; return false; }
+            return true;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toISOString().split('T')[0];
+        }
 
         function getStatusBadge(status) {
             const styles = {
                 active: 'bg-green-100 text-green-700',
                 pending: 'bg-yellow-100 text-yellow-700',
                 expired: 'bg-red-100 text-red-700',
-                revoked: 'bg-gray-100 text-gray-700'
+                revoked: 'bg-gray-100 text-gray-700',
+                suspended: 'bg-orange-100 text-orange-700'
             };
             return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.pending}">${status}</span>`;
         }
@@ -250,19 +268,50 @@
         }
 
         async function loadLicenses() {
+            if (!checkAdminAuth()) return;
             try {
-                // In production, fetch from API
-                allLicenses = sampleLicenses;
-                renderLicenses();
-                updateStats();
+                const response = await fetch(`${API_BASE}/admin/licenses?limit=200`, {
+                    headers: getAuthHeaders()
+                });
+                if (response.status === 401) { window.location.href = '/app.html'; return; }
+                const data = await response.json();
+                if (data.success) {
+                    allLicenses = (data.licenses || []).map(lic => ({
+                        id: lic.id,
+                        key: lic.license_key,
+                        plan: lic.license_type,
+                        status: lic.status,
+                        email: lic.licensee_email || null,
+                        name: lic.licensee_name || '',
+                        company: lic.licensee_company || lic.licensed_orgs?.org_name || null,
+                        expiresAt: formatDate(lic.expiry_date),
+                        createdAt: formatDate(lic.created_at),
+                        maxUsers: lic.max_users,
+                        maxCompanies: lic.max_companies,
+                        smsCredits: lic.sms_credits,
+                        notes: lic.notes || ''
+                    }));
+                } else {
+                    console.error('Failed to load licenses:', data.error);
+                    allLicenses = [];
+                }
             } catch (error) {
                 console.error('Failed to load licenses:', error);
+                allLicenses = [];
             }
+            renderLicenses();
+            updateStats();
         }
 
         function renderLicenses() {
             const filtered = getFilteredLicenses();
             const tbody = document.getElementById('licensesTable');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">No licenses found</td></tr>';
+                lucide.createIcons();
+                return;
+            }
             
             tbody.innerHTML = filtered.map(lic => `
                 <tr class="hover:bg-gray-50">
@@ -274,7 +323,7 @@
                     <td class="px-6 py-4">
                         ${lic.email ? `
                             <div>
-                                <p class="font-medium">${lic.company || 'N/A'}</p>
+                                <p class="font-medium">${lic.company || lic.name || 'N/A'}</p>
                                 <p class="text-sm text-gray-500">${lic.email}</p>
                             </div>
                         ` : '<span class="text-gray-400">Not assigned</span>'}
@@ -285,11 +334,11 @@
                             <button onclick="copyLicenseKey('${lic.key}')" class="text-gray-600 hover:text-gray-800" title="Copy">
                                 <i data-lucide="copy" class="w-4 h-4"></i>
                             </button>
-                            <button onclick="viewLicense(${lic.id})" class="text-indigo-600 hover:text-indigo-800" title="View Details">
+                            <button onclick="viewLicense('${lic.id}')" class="text-indigo-600 hover:text-indigo-800" title="View Details">
                                 <i data-lucide="eye" class="w-4 h-4"></i>
                             </button>
                             ${lic.status === 'active' ? `
-                                <button onclick="revokeLicense(${lic.id})" class="text-red-600 hover:text-red-800" title="Revoke">
+                                <button onclick="revokeLicense('${lic.id}')" class="text-red-600 hover:text-red-800" title="Revoke">
                                     <i data-lucide="ban" class="w-4 h-4"></i>
                                 </button>
                             ` : ''}
@@ -310,16 +359,14 @@
                 if (status && lic.status !== status) return false;
                 if (plan && lic.plan !== plan) return false;
                 if (search) {
-                    const searchable = `${lic.key} ${lic.email || ''} ${lic.company || ''}`.toLowerCase();
+                    const searchable = `${lic.key} ${lic.email || ''} ${lic.company || ''} ${lic.name || ''}`.toLowerCase();
                     if (!searchable.includes(search)) return false;
                 }
                 return true;
             });
         }
 
-        function filterLicenses() {
-            renderLicenses();
-        }
+        function filterLicenses() { renderLicenses(); }
 
         function clearFilters() {
             document.getElementById('filterStatus').value = '';
@@ -332,12 +379,13 @@
             document.getElementById('statTotal').textContent = allLicenses.length;
             document.getElementById('statActive').textContent = allLicenses.filter(l => l.status === 'active').length;
             document.getElementById('statPending').textContent = allLicenses.filter(l => l.status === 'pending').length;
-            document.getElementById('statExpired').textContent = allLicenses.filter(l => l.status === 'expired').length;
+            document.getElementById('statExpired').textContent = allLicenses.filter(l => l.status === 'expired' || (l.expiresAt !== 'N/A' && new Date(l.expiresAt) < new Date())).length;
         }
 
         function openGenerateModal() {
             document.getElementById('generateModal').classList.remove('hidden');
             document.getElementById('generateModal').classList.add('flex', 'items-center', 'justify-center');
+            document.getElementById('genError').classList.add('hidden');
             lucide.createIcons();
         }
 
@@ -345,41 +393,70 @@
             document.getElementById('generateModal').classList.add('hidden');
             document.getElementById('generateModal').classList.remove('flex', 'items-center', 'justify-center');
             document.getElementById('generateForm').reset();
+            document.getElementById('genError').classList.add('hidden');
         }
 
         document.getElementById('generateForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const plan = document.getElementById('genPlan').value;
-            const prefix = { trial: 'TRL', basic: 'BSC', premium: 'PRM', enterprise: 'ENT' }[plan];
-            
-            // Generate random key
-            const segments = [];
-            for (let i = 0; i < 4; i++) {
-                segments.push(Math.random().toString(36).substring(2, 6).toUpperCase());
+            const errorEl = document.getElementById('genError');
+            const submitBtn = document.getElementById('genSubmitBtn');
+            errorEl.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Generating...';
+
+            const licenseType = document.getElementById('genPlan').value;
+            const licenseeName = document.getElementById('genName').value.trim();
+            const licenseeEmail = document.getElementById('genEmail').value.trim();
+            const licenseeCompany = document.getElementById('genCompany').value.trim();
+            const duration = parseInt(document.getElementById('genDuration').value);
+            const notes = document.getElementById('genNotes').value.trim();
+
+            // Calculate expiry date from duration
+            const expiryDate = new Date();
+            if (licenseType === 'trial') {
+                expiryDate.setDate(expiryDate.getDate() + 30);
+            } else {
+                expiryDate.setMonth(expiryDate.getMonth() + duration);
             }
-            const newKey = `${prefix}-${segments.join('-')}`;
-            
-            document.getElementById('generatedKey').textContent = newKey;
-            closeGenerateModal();
-            document.getElementById('keyDisplayModal').classList.remove('hidden');
-            document.getElementById('keyDisplayModal').classList.add('flex', 'items-center', 'justify-center');
-            lucide.createIcons();
-            
-            // In production, save to database
-            console.log('Generated license:', {
-                key: newKey,
-                plan: plan,
-                duration: document.getElementById('genDuration').value,
-                email: document.getElementById('genEmail').value,
-                notes: document.getElementById('genNotes').value
-            });
+
+            try {
+                const response = await fetch(`${API_BASE}/licenses`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        licenseType,
+                        licenseeName,
+                        licenseeEmail,
+                        licenseeCompany,
+                        expiryDate: expiryDate.toISOString(),
+                        notes
+                    })
+                });
+                const data = await response.json();
+                if (data.success && data.license) {
+                    document.getElementById('generatedKey').textContent = data.license.license_key;
+                    closeGenerateModal();
+                    document.getElementById('keyDisplayModal').classList.remove('hidden');
+                    document.getElementById('keyDisplayModal').classList.add('flex', 'items-center', 'justify-center');
+                    lucide.createIcons();
+                } else {
+                    errorEl.textContent = data.error || 'Failed to generate license';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Generate license error:', error);
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Generate';
+            }
         });
 
         function closeKeyDisplay() {
             document.getElementById('keyDisplayModal').classList.add('hidden');
             document.getElementById('keyDisplayModal').classList.remove('flex', 'items-center', 'justify-center');
-            loadLicenses(); // Refresh list
+            loadLicenses();
         }
 
         function copyKey() {
@@ -395,18 +472,40 @@
 
         function viewLicense(id) {
             const lic = allLicenses.find(l => l.id === id);
-            if (lic) {
-                alert(`License Details:\n\nKey: ${lic.key}\nPlan: ${lic.plan}\nStatus: ${lic.status}\nExpires: ${lic.expiresAt}`);
-            }
+            if (!lic) return;
+            alert(
+                `License Details\n` +
+                `━━━━━━━━━━━━━━━\n` +
+                `Key: ${lic.key}\n` +
+                `Plan: ${lic.plan}\n` +
+                `Status: ${lic.status}\n` +
+                `Name: ${lic.name || 'N/A'}\n` +
+                `Email: ${lic.email || 'N/A'}\n` +
+                `Company: ${lic.company || 'N/A'}\n` +
+                `Max Users: ${lic.maxUsers || 'N/A'}\n` +
+                `Max Companies: ${lic.maxCompanies || 'N/A'}\n` +
+                `Created: ${lic.createdAt}\n` +
+                `Expires: ${lic.expiresAt}`
+            );
         }
 
-        function revokeLicense(id) {
-            if (confirm('Are you sure you want to revoke this license? This cannot be undone.')) {
-                // In production, call API
-                const lic = allLicenses.find(l => l.id === id);
-                if (lic) lic.status = 'revoked';
-                renderLicenses();
-                updateStats();
+        async function revokeLicense(id) {
+            if (!confirm('Are you sure you want to revoke this license? This cannot be undone.')) return;
+            try {
+                const response = await fetch(`${API_BASE}/licenses/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('License revoked successfully');
+                    loadLicenses();
+                } else {
+                    alert('Failed to revoke: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Revoke error:', error);
+                alert('Network error while revoking license');
             }
         }
 

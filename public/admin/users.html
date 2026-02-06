@@ -95,7 +95,9 @@
                         <select id="filterRole" class="w-full border rounded-lg px-3 py-2" onchange="filterUsers()">
                             <option value="">All Roles</option>
                             <option value="super_admin">Super Admin</option>
-                            <option value="admin">Admin</option>
+                            <option value="org_admin">Org Admin</option>
+                            <option value="company_admin">Company Admin</option>
+                            <option value="approver">Approver</option>
                             <option value="accounts">Accounts</option>
                             <option value="viewer">Viewer</option>
                         </select>
@@ -181,7 +183,9 @@
                     <select id="userRole" class="w-full border rounded-lg px-3 py-2" required>
                         <option value="viewer">Viewer</option>
                         <option value="accounts">Accounts</option>
-                        <option value="admin">Admin</option>
+                        <option value="approver">Approver</option>
+                        <option value="company_admin">Company Admin</option>
+                        <option value="org_admin">Org Admin</option>
                         <option value="super_admin">Super Admin</option>
                     </select>
                 </div>
@@ -207,70 +211,136 @@
         
         const API_BASE = window.location.origin + '/api';
         let allUsers = [];
-        let organizations = [
-            { id: 1, name: 'ABC Corporation' },
-            { id: 2, name: 'XYZ Limited' },
-            { id: 3, name: 'Tech Solutions India' },
-            { id: 4, name: 'Demo Company' },
-            { id: 5, name: 'Global Enterprises' }
-        ];
+        let organizations = [];
 
-        // Sample users for demo
-        const sampleUsers = [
-            { id: 1, name: 'John Smith', email: 'john@abc.com', mobile: '+852 9876 5432', orgId: 1, org: 'ABC Corporation', role: 'super_admin', status: 'active', lastLogin: '2 hours ago' },
-            { id: 2, name: 'Jane Doe', email: 'jane@abc.com', mobile: '+852 8765 4321', orgId: 1, org: 'ABC Corporation', role: 'admin', status: 'active', lastLogin: '1 day ago' },
-            { id: 3, name: 'Raj Patel', email: 'raj@techsol.in', mobile: '+91 98765 43210', orgId: 3, org: 'Tech Solutions India', role: 'super_admin', status: 'active', lastLogin: '5 minutes ago' },
-            { id: 4, name: 'Sarah Lee', email: 'sarah@xyz.com', mobile: '+852 1234 5678', orgId: 2, org: 'XYZ Limited', role: 'accounts', status: 'active', lastLogin: '3 days ago' },
-            { id: 5, name: 'Demo User', email: 'demo@example.com', mobile: '+1 555 123 4567', orgId: 4, org: 'Demo Company', role: 'viewer', status: 'inactive', lastLogin: 'Never' },
-            { id: 6, name: 'Admin Global', email: 'admin@global.com', mobile: '+44 7700 900123', orgId: 5, org: 'Global Enterprises', role: 'super_admin', status: 'active', lastLogin: '12 hours ago' }
-        ];
+        function getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function checkAdminAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/app.html'; return false; }
+            return true;
+        }
+
+        function formatLastLogin(dateStr) {
+            if (!dateStr) return 'Never';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return date.toISOString().split('T')[0];
+        }
 
         function getStatusBadge(status) {
             const styles = {
                 active: 'bg-green-100 text-green-700',
                 inactive: 'bg-gray-100 text-gray-700',
-                suspended: 'bg-red-100 text-red-700'
+                suspended: 'bg-red-100 text-red-700',
+                pending: 'bg-yellow-100 text-yellow-700'
             };
-            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status]}">${status}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.inactive}">${status}</span>`;
         }
 
         function getRoleBadge(role) {
             const styles = {
                 super_admin: 'bg-purple-100 text-purple-700',
-                admin: 'bg-indigo-100 text-indigo-700',
-                accounts: 'bg-blue-100 text-blue-700',
+                org_admin: 'bg-indigo-100 text-indigo-700',
+                company_admin: 'bg-blue-100 text-blue-700',
+                approver: 'bg-teal-100 text-teal-700',
+                accounts: 'bg-cyan-100 text-cyan-700',
                 viewer: 'bg-gray-100 text-gray-700'
             };
             const labels = {
                 super_admin: 'Super Admin',
-                admin: 'Admin',
+                org_admin: 'Org Admin',
+                company_admin: 'Company Admin',
+                approver: 'Approver',
                 accounts: 'Accounts',
                 viewer: 'Viewer'
             };
-            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[role]}">${labels[role]}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[role] || styles.viewer}">${labels[role] || role}</span>`;
         }
 
         async function loadUsers() {
+            if (!checkAdminAuth()) return;
             try {
-                allUsers = sampleUsers;
-                renderUsers();
-                updateStats();
-                populateOrgDropdowns();
+                const response = await fetch(`${API_BASE}/admin/users?limit=200`, {
+                    headers: getAuthHeaders()
+                });
+                if (response.status === 401) { window.location.href = '/app.html'; return; }
+                const data = await response.json();
+                if (data.success) {
+                    allUsers = (data.users || []).map(u => ({
+                        id: u.id,
+                        name: u.full_name || u.username || 'Unknown',
+                        email: u.email,
+                        mobile: u.mobile || '',
+                        orgId: u.org_id,
+                        org: u.licensed_orgs?.org_name || 'N/A',
+                        companyId: u.company_id,
+                        company: u.companies?.name || '',
+                        role: u.role,
+                        status: u.status || 'active',
+                        lastLogin: formatLastLogin(u.last_login),
+                        createdAt: u.created_at
+                    }));
+                } else {
+                    console.error('Failed to load users:', data.error);
+                    allUsers = [];
+                }
             } catch (error) {
                 console.error('Failed to load users:', error);
+                allUsers = [];
+            }
+            renderUsers();
+            updateStats();
+        }
+
+        async function loadOrganizations() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/organizations?limit=200`, {
+                    headers: getAuthHeaders()
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.success) {
+                    organizations = (data.organizations || []).map(o => ({
+                        id: o.id,
+                        name: o.org_name
+                    }));
+                    populateOrgDropdowns();
+                }
+            } catch (error) {
+                console.error('Failed to load organizations:', error);
             }
         }
 
         function renderUsers() {
             const filtered = getFilteredUsers();
             const tbody = document.getElementById('usersTable');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">No users found</td></tr>';
+                lucide.createIcons();
+                return;
+            }
             
             tbody.innerHTML = filtered.map(user => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                                <span class="text-indigo-600 font-medium">${user.name.charAt(0)}</span>
+                                <span class="text-indigo-600 font-medium">${user.name.charAt(0).toUpperCase()}</span>
                             </div>
                             <div>
                                 <p class="font-medium">${user.name}</p>
@@ -284,18 +354,18 @@
                     <td class="px-6 py-4 text-sm text-gray-500">${user.lastLogin}</td>
                     <td class="px-6 py-4">
                         <div class="flex space-x-2">
-                            <button onclick="editUser(${user.id})" class="text-indigo-600 hover:text-indigo-800" title="Edit">
-                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            <button onclick="viewUser('${user.id}')" class="text-indigo-600 hover:text-indigo-800" title="View">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
                             </button>
-                            <button onclick="resetPassword(${user.id})" class="text-yellow-600 hover:text-yellow-800" title="Reset Password">
+                            <button onclick="resetPassword('${user.id}')" class="text-yellow-600 hover:text-yellow-800" title="Reset Password">
                                 <i data-lucide="key" class="w-4 h-4"></i>
                             </button>
                             ${user.status === 'active' ? `
-                                <button onclick="suspendUser(${user.id})" class="text-red-600 hover:text-red-800" title="Suspend">
+                                <button onclick="suspendUser('${user.id}')" class="text-red-600 hover:text-red-800" title="Suspend">
                                     <i data-lucide="user-x" class="w-4 h-4"></i>
                                 </button>
                             ` : `
-                                <button onclick="activateUser(${user.id})" class="text-green-600 hover:text-green-800" title="Activate">
+                                <button onclick="activateUser('${user.id}')" class="text-green-600 hover:text-green-800" title="Activate">
                                     <i data-lucide="user-check" class="w-4 h-4"></i>
                                 </button>
                             `}
@@ -316,18 +386,16 @@
             return allUsers.filter(user => {
                 if (role && user.role !== role) return false;
                 if (status && user.status !== status) return false;
-                if (org && user.orgId !== parseInt(org)) return false;
+                if (org && user.orgId !== org) return false;
                 if (search) {
-                    const searchable = `${user.name} ${user.email}`.toLowerCase();
+                    const searchable = `${user.name} ${user.email} ${user.org}`.toLowerCase();
                     if (!searchable.includes(search)) return false;
                 }
                 return true;
             });
         }
 
-        function filterUsers() {
-            renderUsers();
-        }
+        function filterUsers() { renderUsers(); }
 
         function clearFilters() {
             document.getElementById('filterRole').value = '';
@@ -340,13 +408,21 @@
         function updateStats() {
             document.getElementById('statTotal').textContent = allUsers.length;
             document.getElementById('statActive').textContent = allUsers.filter(u => u.status === 'active').length;
-            document.getElementById('statAdmins').textContent = allUsers.filter(u => u.role.includes('admin')).length;
-            document.getElementById('statNew').textContent = '12'; // Demo value
+            document.getElementById('statAdmins').textContent = allUsers.filter(u => u.role && u.role.includes('admin')).length;
+            // Calculate new this month from created_at
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const newThisMonth = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= monthStart).length;
+            document.getElementById('statNew').textContent = newThisMonth;
         }
 
         function populateOrgDropdowns() {
             const filterOrg = document.getElementById('filterOrg');
             const userOrg = document.getElementById('userOrg');
+            
+            // Reset options (keep the default)
+            filterOrg.innerHTML = '<option value="">All Organizations</option>';
+            userOrg.innerHTML = '<option value="">Select Organization</option>';
             
             organizations.forEach(org => {
                 filterOrg.innerHTML += `<option value="${org.id}">${org.name}</option>`;
@@ -366,59 +442,85 @@
             document.getElementById('addUserForm').reset();
         }
 
-        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const newUser = {
-                name: document.getElementById('userName').value,
-                email: document.getElementById('userEmail').value,
-                mobile: document.getElementById('userMobile').value,
-                orgId: parseInt(document.getElementById('userOrg').value),
-                org: organizations.find(o => o.id === parseInt(document.getElementById('userOrg').value))?.name,
+            const userData = {
+                full_name: document.getElementById('userName').value.trim(),
+                email: document.getElementById('userEmail').value.trim(),
+                mobile: document.getElementById('userMobile').value.trim(),
+                org_id: document.getElementById('userOrg').value,
                 role: document.getElementById('userRole').value,
-                status: 'active',
-                lastLogin: 'Never'
+                password: document.getElementById('userPassword').value || undefined
             };
 
-            // In production, save to database
-            alert(`User ${newUser.name} created successfully!\nA temporary password has been sent to ${newUser.email}`);
-            closeAddUserModal();
+            try {
+                const response = await fetch(`${API_BASE}/admin/users`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(userData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(`User ${userData.full_name} created successfully!`);
+                    closeAddUserModal();
+                    loadUsers();
+                } else {
+                    alert('Failed to create user: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Create user error:', error);
+                alert('User creation API not yet available. Coming soon.');
+                closeAddUserModal();
+            }
         });
 
-        function editUser(id) {
+        function viewUser(id) {
             const user = allUsers.find(u => u.id === id);
-            if (user) {
-                alert(`Edit user: ${user.name}\n(In production, this would open an edit modal)`);
-            }
+            if (!user) return;
+            alert(
+                `User Details\n` +
+                `━━━━━━━━━━━━━━━\n` +
+                `Name: ${user.name}\n` +
+                `Email: ${user.email}\n` +
+                `Mobile: ${user.mobile || 'N/A'}\n` +
+                `Organization: ${user.org}\n` +
+                `Company: ${user.company || 'N/A'}\n` +
+                `Role: ${user.role}\n` +
+                `Status: ${user.status}\n` +
+                `Last Login: ${user.lastLogin}`
+            );
         }
 
         function resetPassword(id) {
             const user = allUsers.find(u => u.id === id);
+            if (!user) return;
             if (confirm(`Reset password for ${user.name}? A new password will be sent to ${user.email}`)) {
-                alert('Password reset email sent!');
+                alert('Password reset is not yet implemented via API.');
             }
         }
 
         function suspendUser(id) {
             const user = allUsers.find(u => u.id === id);
+            if (!user) return;
             if (confirm(`Suspend user ${user.name}? They will not be able to login.`)) {
-                user.status = 'suspended';
-                renderUsers();
-                updateStats();
+                alert('User suspension is not yet implemented via API.');
             }
         }
 
         function activateUser(id) {
             const user = allUsers.find(u => u.id === id);
+            if (!user) return;
             if (confirm(`Activate user ${user.name}?`)) {
-                user.status = 'active';
-                renderUsers();
-                updateStats();
+                alert('User activation is not yet implemented via API.');
             }
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadUsers);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            loadOrganizations();
+        });
     </script>
 </body>
 </html>

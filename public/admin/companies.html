@@ -143,99 +143,31 @@
     <script>
         lucide.createIcons();
         
+        const API_BASE = window.location.origin + '/api';
         let allCompanies = [];
 
-        // Sample companies for demo
-        const sampleCompanies = [
-            {
-                id: 1,
-                name: 'ABC Corporation',
-                email: 'admin@abc.com',
-                country: 'HK',
-                currency: 'HKD',
-                plan: 'premium',
-                status: 'active',
-                users: 12,
-                vouchers: 450,
-                licenseKey: 'PRM-A1B2C-D3E4F-G5H6-I7J8',
-                expiresAt: '2027-02-05',
-                createdAt: '2025-02-05'
-            },
-            {
-                id: 2,
-                name: 'XYZ Limited',
-                email: 'info@xyz.com',
-                country: 'HK',
-                currency: 'HKD',
-                plan: 'basic',
-                status: 'active',
-                users: 5,
-                vouchers: 230,
-                licenseKey: 'BSC-K9L0M-N1O2P-Q3R4-S5T6',
-                expiresAt: '2027-01-15',
-                createdAt: '2025-01-15'
-            },
-            {
-                id: 3,
-                name: 'Tech Solutions India',
-                email: 'contact@techsol.in',
-                country: 'IN',
-                currency: 'INR',
-                plan: 'premium',
-                status: 'active',
-                users: 25,
-                vouchers: 1200,
-                licenseKey: 'PRM-X1Y2Z-A3B4C-D5E6-F7G8',
-                expiresAt: '2027-03-10',
-                createdAt: '2025-03-10'
-            },
-            {
-                id: 4,
-                name: 'Demo Company',
-                email: 'demo@example.com',
-                country: 'US',
-                currency: 'USD',
-                plan: 'trial',
-                status: 'trial',
-                users: 2,
-                vouchers: 15,
-                licenseKey: 'TRL-U7V8W-X9Y0Z-A1B2-C3D4',
-                expiresAt: '2026-03-07',
-                createdAt: '2026-02-05'
-            },
-            {
-                id: 5,
-                name: 'Global Enterprises',
-                email: 'admin@global.co.uk',
-                country: 'GB',
-                currency: 'GBP',
-                plan: 'enterprise',
-                status: 'active',
-                users: 150,
-                vouchers: 5600,
-                licenseKey: 'ENT-E5F6G-H7I8J-K9L0-M1N2',
-                expiresAt: '2028-02-05',
-                createdAt: '2024-02-05'
-            },
-            {
-                id: 6,
-                name: 'Expired Corp',
-                email: 'old@expired.com',
-                country: 'HK',
-                currency: 'HKD',
-                plan: 'basic',
-                status: 'expired',
-                users: 3,
-                vouchers: 0,
-                licenseKey: 'BSC-O3P4Q-R5S6T-U7V8-W9X0',
-                expiresAt: '2025-12-01',
-                createdAt: '2024-12-01'
-            }
-        ];
+        function getAuthHeaders() {
+            return {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function checkAdminAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/app.html'; return false; }
+            return true;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toISOString().split('T')[0];
+        }
 
         const countryFlags = {
             'HK': '🇭🇰', 'US': '🇺🇸', 'GB': '🇬🇧', 'IN': '🇮🇳', 'SG': '🇸🇬',
-            'AE': '🇦🇪', 'AU': '🇦🇺', 'CN': '🇨🇳', 'JP': '🇯🇵', 'DE': '🇩🇪'
+            'AE': '🇦🇪', 'AU': '🇦🇺', 'CN': '🇨🇳', 'JP': '🇯🇵', 'DE': '🇩🇪',
+            'ZA': '🇿🇦', 'NZ': '🇳🇿', 'CA': '🇨🇦', 'MY': '🇲🇾', 'TH': '🇹🇭'
         };
 
         function getStatusBadge(status) {
@@ -243,9 +175,10 @@
                 active: 'bg-green-100 text-green-700',
                 trial: 'bg-yellow-100 text-yellow-700',
                 expired: 'bg-red-100 text-red-700',
-                suspended: 'bg-gray-100 text-gray-700'
+                suspended: 'bg-gray-100 text-gray-700',
+                pending: 'bg-orange-100 text-orange-700'
             };
-            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status]}">${status}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.pending}">${status}</span>`;
         }
 
         function getPlanBadge(plan) {
@@ -255,31 +188,62 @@
                 premium: 'bg-indigo-100 text-indigo-700',
                 enterprise: 'bg-pink-100 text-pink-700'
             };
-            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[plan]}">${plan}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[plan] || 'bg-gray-100 text-gray-700'}">${plan || 'N/A'}</span>`;
         }
 
         async function loadCompanies() {
+            if (!checkAdminAuth()) return;
             try {
-                allCompanies = sampleCompanies;
-                renderCompanies();
-                updateStats();
+                const response = await fetch(`${API_BASE}/admin/organizations?limit=200`, {
+                    headers: getAuthHeaders()
+                });
+                if (response.status === 401) { window.location.href = '/app.html'; return; }
+                const data = await response.json();
+                if (data.success) {
+                    allCompanies = (data.organizations || []).map(org => ({
+                        id: org.id,
+                        name: org.org_name,
+                        email: org.primary_contact_email || '',
+                        country: org.country || '',
+                        currency: org.currency || '',
+                        plan: org.licenses?.license_type || org.subscription_plan || null,
+                        status: org.status || 'pending',
+                        licenseKey: org.licenses?.license_key || 'N/A',
+                        licenseStatus: org.licenses?.status || null,
+                        expiresAt: formatDate(org.licenses?.expiry_date),
+                        createdAt: formatDate(org.created_at),
+                        maxUsers: org.licenses?.max_users || 0,
+                        maxCompanies: org.licenses?.max_companies || 0
+                    }));
+                } else {
+                    console.error('Failed to load organizations:', data.error);
+                    allCompanies = [];
+                }
             } catch (error) {
-                console.error('Failed to load companies:', error);
+                console.error('Failed to load organizations:', error);
+                allCompanies = [];
             }
+            renderCompanies();
+            updateStats();
         }
 
         function renderCompanies() {
             const filtered = getFilteredCompanies();
             const grid = document.getElementById('companiesGrid');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-12">No organizations found</div>';
+                return;
+            }
             
             grid.innerHTML = filtered.map(company => `
-                <div class="card p-6 hover:shadow-lg transition-shadow cursor-pointer" onclick="viewCompany(${company.id})">
+                <div class="card p-6 hover:shadow-lg transition-shadow cursor-pointer" onclick="viewCompany('${company.id}')">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center">
                             <span class="text-2xl mr-2">${countryFlags[company.country] || '🏢'}</span>
                             <div>
                                 <h3 class="font-bold text-gray-800">${company.name}</h3>
-                                <p class="text-sm text-gray-500">${company.email}</p>
+                                <p class="text-sm text-gray-500">${company.email || 'No email'}</p>
                             </div>
                         </div>
                         ${getStatusBadge(company.status)}
@@ -287,17 +251,17 @@
                     
                     <div class="flex items-center justify-between mb-4">
                         ${getPlanBadge(company.plan)}
-                        <span class="text-sm text-gray-500">${company.currency}</span>
+                        <span class="text-sm text-gray-500">${company.currency || 'N/A'}</span>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p class="text-gray-500">Users</p>
-                            <p class="font-semibold">${company.users}</p>
+                            <p class="text-gray-500">Max Users</p>
+                            <p class="font-semibold">${company.maxUsers || 'N/A'}</p>
                         </div>
                         <div>
-                            <p class="text-gray-500">Vouchers</p>
-                            <p class="font-semibold">${company.vouchers.toLocaleString()}</p>
+                            <p class="text-gray-500">Max Companies</p>
+                            <p class="font-semibold">${company.maxCompanies || 'N/A'}</p>
                         </div>
                     </div>
                     
@@ -324,9 +288,7 @@
             });
         }
 
-        function filterCompanies() {
-            renderCompanies();
-        }
+        function filterCompanies() { renderCompanies(); }
 
         function clearFilters() {
             document.getElementById('filterStatus').value = '';
@@ -338,7 +300,7 @@
         function updateStats() {
             document.getElementById('statTotal').textContent = allCompanies.length;
             document.getElementById('statActive').textContent = allCompanies.filter(c => c.status === 'active').length;
-            document.getElementById('statTrial').textContent = allCompanies.filter(c => c.status === 'trial').length;
+            document.getElementById('statTrial').textContent = allCompanies.filter(c => c.status === 'trial' || c.plan === 'trial').length;
             document.getElementById('statSuspended').textContent = allCompanies.filter(c => c.status === 'suspended' || c.status === 'expired').length;
         }
 
@@ -360,19 +322,19 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-4 bg-gray-50 rounded-lg">
                             <p class="text-sm text-gray-500">Email</p>
-                            <p class="font-medium">${company.email}</p>
+                            <p class="font-medium">${company.email || 'N/A'}</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
                             <p class="text-sm text-gray-500">Currency</p>
-                            <p class="font-medium">${company.currency}</p>
+                            <p class="font-medium">${company.currency || 'N/A'}</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-500">Users</p>
-                            <p class="font-medium">${company.users}</p>
+                            <p class="text-sm text-gray-500">Max Users</p>
+                            <p class="font-medium">${company.maxUsers || 'N/A'}</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-500">Vouchers Created</p>
-                            <p class="font-medium">${company.vouchers.toLocaleString()}</p>
+                            <p class="text-sm text-gray-500">Max Companies</p>
+                            <p class="font-medium">${company.maxCompanies || 'N/A'}</p>
                         </div>
                     </div>
                     
@@ -393,15 +355,15 @@
                     </div>
                     
                     <div class="flex space-x-3">
-                        <button onclick="editCompany(${company.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                        <button onclick="editCompany('${company.id}')" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
                             Edit Details
                         </button>
                         ${company.status === 'active' ? `
-                            <button onclick="suspendCompany(${company.id})" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
+                            <button onclick="suspendCompany('${company.id}')" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
                                 Suspend
                             </button>
                         ` : `
-                            <button onclick="activateCompany(${company.id})" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+                            <button onclick="activateCompany('${company.id}')" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
                                 Activate
                             </button>
                         `}
@@ -420,26 +382,18 @@
         }
 
         function editCompany(id) {
-            alert('Edit company details (In production, this would open an edit form)');
+            alert('Edit organization details — API not yet implemented.');
         }
 
         function suspendCompany(id) {
-            if (confirm('Are you sure you want to suspend this company?')) {
-                const company = allCompanies.find(c => c.id === id);
-                if (company) company.status = 'suspended';
-                closeDetailsModal();
-                renderCompanies();
-                updateStats();
+            if (confirm('Are you sure you want to suspend this organization?')) {
+                alert('Organization suspension — API not yet implemented.');
             }
         }
 
         function activateCompany(id) {
-            if (confirm('Activate this company?')) {
-                const company = allCompanies.find(c => c.id === id);
-                if (company) company.status = 'active';
-                closeDetailsModal();
-                renderCompanies();
-                updateStats();
+            if (confirm('Activate this organization?')) {
+                alert('Organization activation — API not yet implemented.');
             }
         }
 
