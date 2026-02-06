@@ -134,3 +134,4 @@ class LicenseGenerator {
 }
 
 module.exports = LicenseGenerator;
+module.exports.LicenseGenerator = LicenseGenerator;

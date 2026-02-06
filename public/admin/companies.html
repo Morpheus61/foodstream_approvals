@@ -126,7 +126,7 @@
     </div>
 
     <!-- Company Details Modal -->
-    <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold" id="modalTitle">Company Details</h3>
@@ -410,11 +410,13 @@
             `;
             
             document.getElementById('detailsModal').classList.remove('hidden');
+            document.getElementById('detailsModal').classList.add('flex', 'items-center', 'justify-center');
             lucide.createIcons();
         }
 
         function closeDetailsModal() {
             document.getElementById('detailsModal').classList.add('hidden');
+            document.getElementById('detailsModal').classList.remove('flex', 'items-center', 'justify-center');
         }
 
         function editCompany(id) {

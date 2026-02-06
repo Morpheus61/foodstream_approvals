@@ -30,6 +30,7 @@ export default function TrialSignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [resultData, setResultData] = useState<{ licenseKey?: string; username?: string; trialEndsAt?: string } | null>(null);
   
   const [formData, setFormData] = useState({
     companyName: '',
@@ -83,14 +84,23 @@ export default function TrialSignupPage() {
       });
 
       if (response.success) {
+        // Store license key for future API calls
+        const resData = response as any;
+        if (resData.licenseKey) {
+          localStorage.setItem('licenseKey', resData.licenseKey);
+        }
+        setResultData({
+          licenseKey: resData.licenseKey,
+          username: resData.username,
+          trialEndsAt: resData.trialEndsAt,
+        });
         setSuccess(true);
         toast.success('Trial account created successfully!');
-        setTimeout(() => navigate('/login'), 2000);
       } else {
-        setError(response.error || 'Failed to create trial account');
+        setError((response as any).error || 'Failed to create trial account');
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
+    } catch (err: any) {
+      const message = err?.response?.data?.error || err?.message || 'Registration failed';
       setError(message);
       toast.error(message);
     } finally {
@@ -110,9 +120,34 @@ export default function TrialSignupPage() {
             <p className="text-gray-600 mb-4">
               Your 30-day free trial has been activated.
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              A confirmation email has been sent to {formData.email}
+
+            {resultData && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-3">
+                {resultData.username && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">Your Username</p>
+                    <p className="font-mono font-bold text-gray-900 text-lg">{resultData.username}</p>
+                  </div>
+                )}
+                {resultData.licenseKey && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">License Key</p>
+                    <p className="font-mono text-sm text-gray-700 break-all">{resultData.licenseKey}</p>
+                  </div>
+                )}
+                {resultData.trialEndsAt && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">Trial Expires</p>
+                    <p className="text-gray-700">{new Date(resultData.trialEndsAt).toLocaleDateString()}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-6">
+              ⚠️ Please save your username and license key. You will need the username to sign in.
             </p>
+
             <Button onClick={() => navigate('/login')} className="w-full">
               Go to Login
             </Button>

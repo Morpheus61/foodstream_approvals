@@ -144,7 +144,7 @@
     </div>
 
     <!-- Generate License Modal -->
-    <div id="generateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div id="generateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="bg-white rounded-xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Generate License Key</h3>
@@ -193,7 +193,7 @@
     </div>
 
     <!-- Generated Key Display Modal -->
-    <div id="keyDisplayModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div id="keyDisplayModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="bg-white rounded-xl p-6 w-full max-w-md text-center">
             <div class="text-4xl mb-4">🔑</div>
             <h3 class="text-xl font-bold mb-2">License Generated!</h3>
@@ -337,11 +337,13 @@
 
         function openGenerateModal() {
             document.getElementById('generateModal').classList.remove('hidden');
+            document.getElementById('generateModal').classList.add('flex', 'items-center', 'justify-center');
             lucide.createIcons();
         }
 
         function closeGenerateModal() {
             document.getElementById('generateModal').classList.add('hidden');
+            document.getElementById('generateModal').classList.remove('flex', 'items-center', 'justify-center');
             document.getElementById('generateForm').reset();
         }
 
@@ -361,6 +363,7 @@
             document.getElementById('generatedKey').textContent = newKey;
             closeGenerateModal();
             document.getElementById('keyDisplayModal').classList.remove('hidden');
+            document.getElementById('keyDisplayModal').classList.add('flex', 'items-center', 'justify-center');
             lucide.createIcons();
             
             // In production, save to database
@@ -375,6 +378,7 @@
 
         function closeKeyDisplay() {
             document.getElementById('keyDisplayModal').classList.add('hidden');
+            document.getElementById('keyDisplayModal').classList.remove('flex', 'items-center', 'justify-center');
             loadLicenses(); // Refresh list
         }
 

@@ -338,17 +338,52 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Account created successfully! Redirecting...', 'success');
-                    
                     // Store trial info
                     localStorage.setItem('trialActive', 'true');
                     localStorage.setItem('licenseKey', data.licenseKey || 'TRIAL');
                     localStorage.setItem('userCurrency', formData.currency);
+
+                    // Show success with credentials instead of redirect
+                    const formContainer = document.getElementById('trialForm');
+                    formContainer.innerHTML = `
+                        <div class="text-center py-6">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome to FoodStream!</h2>
+                            <p class="text-gray-600 mb-4">Your 30-day free trial has been activated.</p>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-3">
+                                ${data.username ? `
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 uppercase">Your Username</p>
+                                    <p class="font-mono font-bold text-gray-900 text-lg">${data.username}</p>
+                                </div>` : ''}
+                                ${data.licenseKey ? `
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 uppercase">License Key</p>
+                                    <p class="font-mono text-sm text-gray-700 break-all">${data.licenseKey}</p>
+                                </div>` : ''}
+                                ${data.trialEndsAt ? `
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 uppercase">Trial Expires</p>
+                                    <p class="text-gray-700">${new Date(data.trialEndsAt).toLocaleDateString()}</p>
+                                </div>` : ''}
+                            </div>
+
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                                <p class="text-sm text-amber-700">⚠️ Please save your username and license key. You will need the username to sign in.</p>
+                            </div>
+
+                            <a href="/app.html" class="inline-block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                Go to Login
+                            </a>
+                        </div>
+                    `;
                     
-                    // Redirect to app
-                    setTimeout(() => {
-                        window.location.href = '/app.html';
-                    }, 1500);
+                    showToast('Account created successfully!', 'success');
                 } else {
                     showToast(data.error || 'Registration failed. Please try again.', 'error');
                     submitBtn.disabled = false;

@@ -10,13 +10,22 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token and license key
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = useAuthStore.getState().token;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Attach license key from storage for license-gated endpoints
+    const licenseKey =
+      localStorage.getItem('licenseKey') ||
+      sessionStorage.getItem('licenseKey');
+    if (licenseKey && config.headers) {
+      config.headers['x-license-key'] = licenseKey;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

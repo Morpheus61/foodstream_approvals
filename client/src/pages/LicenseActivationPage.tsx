@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { KeyRound, Mail, Phone, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { KeyRound, Mail, Phone, AlertCircle, CheckCircle2, User, Building2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LicenseActivationPage() {
@@ -13,19 +13,22 @@ export default function LicenseActivationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [resultData, setResultData] = useState<{ username?: string; licenseKey?: string; plan?: string } | null>(null);
 
   const [formData, setFormData] = useState({
     licenseKey: '',
     email: '',
     mobile: '',
+    fullName: '',
+    companyName: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const formatLicenseKey = (value: string) => {
-    // Remove non-alphanumeric, convert to uppercase
     const cleaned = value.replace(/[^A-Z0-9-]/gi, '').toUpperCase();
-    // Add dashes every 5 characters (if not already there)
     const parts = cleaned.replace(/-/g, '').match(/.{1,5}/g) || [];
-    return parts.join('-').substring(0, 29); // PRM-XXXXX-XXXXX-XXXXX-XXXXX = 29 chars
+    return parts.join('-').substring(0, 29);
   };
 
   const handleChange = (field: string, value: string) => {
@@ -39,8 +42,29 @@ export default function LicenseActivationPage() {
     e.preventDefault();
     setError('');
 
-    if (!formData.licenseKey.startsWith('PRM-') && !formData.licenseKey.startsWith('ENT-')) {
-      setError('Invalid license key format. Must start with PRM- or ENT-');
+    const validPrefixes = ['BSC-', 'PRM-', 'ENT-'];
+    if (!validPrefixes.some((p) => formData.licenseKey.startsWith(p))) {
+      setError('Invalid license key format. Must start with BSC-, PRM-, or ENT-');
+      return;
+    }
+
+    if (!formData.fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+
+    if (!formData.companyName.trim()) {
+      setError('Company name is required');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
@@ -50,18 +74,28 @@ export default function LicenseActivationPage() {
       const response = await onboardingService.activateLicense(
         formData.licenseKey,
         formData.email,
-        formData.mobile
+        formData.mobile,
+        formData.companyName,
+        formData.fullName,
+        formData.password
       );
 
       if (response.success) {
+        // Store the license key for API requests
+        localStorage.setItem('licenseKey', formData.licenseKey);
+
+        setResultData({
+          username: (response as any).username,
+          licenseKey: formData.licenseKey,
+          plan: (response as any).license?.plan,
+        });
         setSuccess(true);
         toast.success('License activated successfully!');
-        setTimeout(() => navigate('/login'), 2000);
       } else {
-        setError(response.error || 'License activation failed');
+        setError((response as any).error || 'License activation failed');
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Activation failed';
+    } catch (err: any) {
+      const message = err?.response?.data?.error || err?.message || 'Activation failed';
       setError(message);
       toast.error(message);
     } finally {
@@ -79,8 +113,36 @@ export default function LicenseActivationPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">License Activated!</h2>
             <p className="text-gray-600 mb-6">
-              Your license has been successfully activated. You can now sign in.
+              Your license has been successfully activated. Please save your login credentials below.
             </p>
+
+            {resultData && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-3">
+                {resultData.username && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">Username</p>
+                    <p className="font-mono font-bold text-gray-900 text-lg">{resultData.username}</p>
+                  </div>
+                )}
+                {resultData.licenseKey && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">License Key</p>
+                    <p className="font-mono text-sm text-gray-700 break-all">{resultData.licenseKey}</p>
+                  </div>
+                )}
+                {resultData.plan && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">Plan</p>
+                    <p className="text-gray-700 capitalize">{resultData.plan}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-6">
+              ⚠️ Please save your username. You will need it to sign in.
+            </p>
+
             <Button onClick={() => navigate('/login')} className="w-full">
               Continue to Login
             </Button>
@@ -126,7 +188,7 @@ export default function LicenseActivationPage() {
                   <KeyRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="licenseKey"
-                    placeholder="PRM-XXXXX-XXXXX-XXXXX-XXXXX"
+                    placeholder="BSC-XXXXX-XXXXX-XXXX-XXXX"
                     value={formData.licenseKey}
                     onChange={(e) => handleChange('licenseKey', e.target.value)}
                     className="pl-10 font-mono"
@@ -134,8 +196,40 @@ export default function LicenseActivationPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500">
-                  Format: PRM-XXXXX-XXXXX-XXXXX-XXXXX
+                  Accepted formats: BSC-, PRM-, ENT-
                 </p>
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name *</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="fullName"
+                    placeholder="John Smith"
+                    value={formData.fullName}
+                    onChange={(e) => handleChange('fullName', e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Company Name */}
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name *</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="companyName"
+                    placeholder="Acme Corporation"
+                    value={formData.companyName}
+                    onChange={(e) => handleChange('companyName', e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Email */}
@@ -168,6 +262,42 @@ export default function LicenseActivationPage() {
                     onChange={(e) => handleChange('mobile', e.target.value)}
                     className="pl-10"
                     required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={formData.password}
+                    onChange={(e) => handleChange('password', e.target.value)}
+                    className="pl-10"
+                    required
+                    minLength={8}
+                  />
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Re-enter password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                    className="pl-10"
+                    required
+                    minLength={8}
                   />
                 </div>
               </div>

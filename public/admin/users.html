@@ -149,7 +149,7 @@
     </div>
 
     <!-- Add User Modal -->
-    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="bg-white rounded-xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Add New User</h3>
@@ -356,11 +356,13 @@
 
         function openAddUserModal() {
             document.getElementById('addUserModal').classList.remove('hidden');
+            document.getElementById('addUserModal').classList.add('flex', 'items-center', 'justify-center');
             lucide.createIcons();
         }
 
         function closeAddUserModal() {
             document.getElementById('addUserModal').classList.add('hidden');
+            document.getElementById('addUserModal').classList.remove('flex', 'items-center', 'justify-center');
             document.getElementById('addUserForm').reset();
         }
 

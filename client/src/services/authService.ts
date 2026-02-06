@@ -53,17 +53,27 @@ export const onboardingService = {
     return response.data;
   },
 
-  activateLicense: async (licenseKey: string, email: string, mobile: string): Promise<ApiResponse<License>> => {
+  activateLicense: async (
+    licenseKey: string,
+    email: string,
+    mobile: string,
+    companyName: string,
+    fullName: string,
+    password: string
+  ): Promise<ApiResponse<License>> => {
     const response = await api.post('/onboarding/activate-license', {
       licenseKey,
       primaryContactEmail: email,
       primaryContactMobile: mobile,
+      companyName,
+      fullName,
+      password,
     });
     return response.data;
   },
 
   verifyLicense: async (licenseKey: string): Promise<ApiResponse<License>> => {
-    const response = await api.post('/onboarding/verify-license', { licenseKey });
+    const response = await api.post('/onboarding/validate-license', { licenseKey });
     return response.data;
   },
 };

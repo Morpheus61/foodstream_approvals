@@ -36,19 +36,19 @@ export interface OnboardingResponse {
 export const onboardingService = {
   // Start free trial
   async startTrial(data: TrialSignupData): Promise<ApiResponse<OnboardingResponse>> {
-    const response = await api.post<ApiResponse<OnboardingResponse>>('/onboarding/trial', data);
+    const response = await api.post<ApiResponse<OnboardingResponse>>('/onboarding/start-trial', data);
     return response.data;
   },
 
   // Activate license
   async activateLicense(data: LicenseActivationData): Promise<ApiResponse<OnboardingResponse>> {
-    const response = await api.post<ApiResponse<OnboardingResponse>>('/onboarding/activate', data);
+    const response = await api.post<ApiResponse<OnboardingResponse>>('/onboarding/activate-license', data);
     return response.data;
   },
 
   // Verify license key (check if valid before full activation)
   async verifyLicenseKey(licenseKey: string): Promise<ApiResponse<{ valid: boolean; tier?: string }>> {
-    const response = await api.post<ApiResponse<{ valid: boolean; tier?: string }>>('/onboarding/verify-license', {
+    const response = await api.post<ApiResponse<{ valid: boolean; tier?: string }>>('/onboarding/validate-license', {
       licenseKey,
     });
     return response.data;
@@ -56,7 +56,7 @@ export const onboardingService = {
 
   // Get pricing tiers
   async getPricingTiers(): Promise<ApiResponse<any[]>> {
-    const response = await api.get<ApiResponse<any[]>>('/pricing/tiers');
+    const response = await api.get<ApiResponse<any[]>>('/onboarding/pricing');
     return response.data;
   },
 

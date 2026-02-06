@@ -2,159 +2,188 @@ const express = require('express');
 const router = express.Router();
 const { getSupabaseClient } = require('../config/database');
 const logger = require('../utils/logger');
-const { generateLicenseKey } = require('../utils/licenseGenerator');
+const LicenseGenerator = require('../utils/licenseGenerator');
+const encryptionUtil = require('../utils/encryption');
 
 /**
  * Onboarding API
  * Handles license activation and free trial signup
+ *
+ * Database tables used:
+ *   licenses       — license records
+ *   licensed_orgs  — tenant organizations
+ *   users          — user accounts (requires username, password_hash)
+ *   companies      — companies within an org
+ *   license_usage  — monthly usage tracking
  */
 
 // =====================================================
-// FREE TRIAL SIGNUP (No License Required!)
+// HELPERS
+// =====================================================
+
+async function generateUniqueUsername(supabase, email) {
+    let base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (base.length < 3) base = base + 'user';
+    let username = base;
+    let suffix = 0;
+    while (true) {
+        const { data: existing } = await supabase
+            .from('users').select('id').eq('username', username).single();
+        if (!existing) return username;
+        suffix++;
+        username = `${base}${suffix}`;
+    }
+}
+
+async function generateOrgSlug(supabase, companyName) {
+    let base = companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 50);
+    if (base.length < 3) base = base + '-org';
+    let slug = base;
+    let suffix = 0;
+    while (true) {
+        const { data: existing } = await supabase
+            .from('licensed_orgs').select('id').eq('org_slug', slug).single();
+        if (!existing) return slug;
+        suffix++;
+        slug = `${base}-${suffix}`;
+    }
+}
+
+// =====================================================
+// FREE TRIAL SIGNUP
 // =====================================================
 
 /**
  * POST /api/onboarding/start-trial
- * Start a free trial - NO LICENSE KEY REQUIRED
+ * Creates: license → licensed_org → user → company → license_usage
  */
 router.post('/start-trial', async (req, res) => {
     try {
         const {
-            companyName,
-            fullName,
-            email,
-            mobile,
-            password,
-            country,
-            currency,
-            planType = 'trial'
+            companyName, fullName, email, mobile, password,
+            country, currency, planType = 'trial'
         } = req.body;
 
-        // Validate required fields
         if (!companyName || !fullName || !email || !mobile || !password) {
-            return res.status(400).json({
-                success: false,
-                error: 'All fields are required'
-            });
+            return res.status(400).json({ success: false, error: 'All fields are required' });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
         }
 
         const supabase = getSupabaseClient();
 
-        // Check if email already exists
+        // Check duplicate email
         const { data: existingUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', email.toLowerCase())
-            .single();
-
+            .from('users').select('id').eq('email', email.toLowerCase()).single();
         if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                error: 'An account with this email already exists'
-            });
+            return res.status(400).json({ success: false, error: 'An account with this email already exists' });
         }
 
-        // Generate trial license key
-        const licenseKey = generateLicenseKey('TRL');
+        // 1. Generate license key
         const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 days trial
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        const licenseKey = LicenseGenerator.generateKey(email.toLowerCase(), 'trial', trialEndDate.toISOString());
 
-        // Create organization/tenant
-        const { data: organization, error: orgError } = await supabase
-            .from('organizations')
+        // 2. Create license record
+        const { data: license, error: licenseError } = await supabase
+            .from('licenses')
             .insert({
-                name: companyName,
-                status: 'trial',
                 license_key: licenseKey,
                 license_type: 'trial',
-                license_expires_at: trialEndDate.toISOString(),
+                licensee_name: fullName,
+                licensee_email: email.toLowerCase(),
+                licensee_mobile: mobile,
+                licensee_company: companyName,
+                status: 'active',
+                max_companies: 1,
+                max_users: 3,
+                max_vouchers_per_month: 50,
+                sms_credits: 100,
+                issued_date: new Date().toISOString(),
+                activation_date: new Date().toISOString(),
+                expiry_date: trialEndDate.toISOString(),
+                features: { print: true, reports: true, api_access: false, custom_domain: false, white_label: true, multi_company: false, advanced_analytics: false }
+            })
+            .select().single();
+        if (licenseError) throw new Error('Failed to create license: ' + licenseError.message);
+
+        // 3. Create organization (licensed_orgs)
+        const orgSlug = await generateOrgSlug(supabase, companyName);
+        const { data: org, error: orgError } = await supabase
+            .from('licensed_orgs')
+            .insert({
+                license_id: license.id,
+                org_name: companyName,
+                org_slug: orgSlug,
+                primary_contact_name: fullName,
+                primary_contact_email: email.toLowerCase(),
+                primary_contact_mobile: mobile,
                 country: country || 'HK',
                 currency: currency || 'HKD',
-                settings: {
-                    plan: 'trial',
-                    maxCompanies: 1,
-                    maxUsers: 3,
-                    maxVouchersPerMonth: 50,
-                    smsCredits: 100
-                }
+                status: 'active',
+                onboarding_completed: false,
+                onboarding_step: 1
             })
-            .select()
-            .single();
-
+            .select().single();
         if (orgError) {
-            logger.error('Failed to create organization', { error: orgError.message });
-            throw orgError;
+            await supabase.from('licenses').delete().eq('id', license.id);
+            throw new Error('Failed to create organization: ' + orgError.message);
         }
 
-        // Create admin user (hashed password should be done in production)
+        // 4. Create admin user (password hashed with bcrypt)
+        const passwordHash = await encryptionUtil.hashPassword(password);
+        const username = await generateUniqueUsername(supabase, email);
         const { data: user, error: userError } = await supabase
             .from('users')
             .insert({
-                organization_id: organization.id,
-                email: email.toLowerCase(),
+                org_id: org.id,
+                username: username,
                 full_name: fullName,
+                email: email.toLowerCase(),
                 mobile: mobile,
-                password_hash: password, // In production, use bcrypt.hash()
+                password_hash: passwordHash,
                 role: 'super_admin',
                 status: 'active'
             })
-            .select()
-            .single();
-
+            .select().single();
         if (userError) {
-            logger.error('Failed to create user', { error: userError.message });
-            // Rollback organization creation
-            await supabase.from('organizations').delete().eq('id', organization.id);
-            throw userError;
+            await supabase.from('licensed_orgs').delete().eq('id', org.id);
+            await supabase.from('licenses').delete().eq('id', license.id);
+            throw new Error('Failed to create user: ' + userError.message);
         }
 
-        // Create default company
-        const { error: companyError } = await supabase
+        // 5. Create default company
+        const { data: company } = await supabase
             .from('companies')
-            .insert({
-                organization_id: organization.id,
-                name: companyName,
-                is_default: true,
-                status: 'active'
-            });
-
-        if (companyError) {
-            logger.error('Failed to create company', { error: companyError.message });
+            .insert({ org_id: org.id, name: companyName, country: country || 'HK', status: 'active', created_by: user.id })
+            .select().single();
+        if (company) {
+            await supabase.from('users').update({ company_id: company.id }).eq('id', user.id);
         }
 
-        // Log the trial signup
-        logger.info('New trial signup', {
-            email: email,
-            company: companyName,
-            country: country,
-            currency: currency,
-            licenseKey: licenseKey
+        // 6. Initialize license usage
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        await supabase.from('license_usage').insert({
+            license_id: license.id, month: currentMonth,
+            companies_count: 1, users_count: 1, vouchers_count: 0, sms_sent: 0
         });
+
+        logger.info('New trial signup', { email, username, licenseKey, orgId: org.id });
 
         res.json({
             success: true,
             message: 'Trial account created successfully!',
             licenseKey: licenseKey,
+            username: username,
             trialEndsAt: trialEndDate.toISOString(),
-            user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.full_name,
-                role: user.role
-            },
-            organization: {
-                id: organization.id,
-                name: organization.name,
-                currency: organization.currency
-            }
+            user: { id: user.id, username, email: user.email, fullName: user.full_name, role: user.role },
+            organization: { id: org.id, name: org.org_name, currency: org.currency }
         });
 
     } catch (error) {
-        logger.error('Trial signup failed', { error: error.message });
-        res.status(500).json({
-            success: false,
-            error: 'Failed to create trial account. Please try again.'
-        });
+        logger.error('Trial signup failed', { error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, error: error.message || 'Failed to create trial account' });
     }
 });
 
@@ -164,7 +193,7 @@ router.post('/start-trial', async (req, res) => {
 
 /**
  * POST /api/onboarding/activate-license
- * Activate a purchased license key
+ * Activate a purchased license key and create org/user/company
  */
 router.post('/activate-license', async (req, res) => {
     try {
@@ -172,19 +201,29 @@ router.post('/activate-license', async (req, res) => {
             licenseKey,
             primaryContactEmail,
             primaryContactMobile,
-            companyName
+            companyName,
+            fullName,
+            password
         } = req.body;
 
-        if (!licenseKey || !primaryContactEmail || !primaryContactMobile) {
+        if (!licenseKey || !primaryContactEmail || !primaryContactMobile || !companyName || !fullName || !password) {
             return res.status(400).json({
                 success: false,
-                error: 'License key, email, and mobile are required'
+                error: 'All fields are required: licenseKey, email, mobile, companyName, fullName, password'
             });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
         }
 
         const supabase = getSupabaseClient();
 
-        // Check if license exists and is valid
+        // 1. Validate the license key format
+        if (!LicenseGenerator.validateFormat(licenseKey.toUpperCase())) {
+            return res.status(400).json({ success: false, error: 'Invalid license key format' });
+        }
+
+        // 2. Look up the license
         const { data: license, error: licenseError } = await supabase
             .from('licenses')
             .select('*')
@@ -192,61 +231,112 @@ router.post('/activate-license', async (req, res) => {
             .single();
 
         if (licenseError || !license) {
-            return res.status(404).json({
-                success: false,
-                error: 'Invalid license key'
-            });
+            return res.status(404).json({ success: false, error: 'Invalid license key. Please check and try again.' });
         }
 
         if (license.status === 'active') {
-            return res.status(400).json({
-                success: false,
-                error: 'License is already activated'
-            });
+            return res.status(400).json({ success: false, error: 'This license is already activated' });
         }
-
         if (license.status === 'expired') {
-            return res.status(400).json({
-                success: false,
-                error: 'License has expired'
-            });
+            return res.status(400).json({ success: false, error: 'This license has expired' });
+        }
+        if (license.status === 'revoked' || license.status === 'suspended') {
+            return res.status(400).json({ success: false, error: 'This license has been ' + license.status });
         }
 
-        // Activate the license
+        // Check duplicate email
+        const { data: existingUser } = await supabase
+            .from('users').select('id').eq('email', primaryContactEmail.toLowerCase()).single();
+        if (existingUser) {
+            return res.status(400).json({ success: false, error: 'An account with this email already exists' });
+        }
+
+        // 3. Activate the license
         const { error: updateError } = await supabase
             .from('licenses')
             .update({
                 status: 'active',
-                activated_at: new Date().toISOString(),
-                contact_email: primaryContactEmail,
-                contact_mobile: primaryContactMobile
+                activation_date: new Date().toISOString(),
+                licensee_name: fullName,
+                licensee_email: primaryContactEmail.toLowerCase(),
+                licensee_mobile: primaryContactMobile,
+                licensee_company: companyName
             })
             .eq('id', license.id);
+        if (updateError) throw new Error('Failed to activate license: ' + updateError.message);
 
-        if (updateError) throw updateError;
+        // 4. Create organization
+        const orgSlug = await generateOrgSlug(supabase, companyName);
+        const { data: org, error: orgError } = await supabase
+            .from('licensed_orgs')
+            .insert({
+                license_id: license.id,
+                org_name: companyName,
+                org_slug: orgSlug,
+                primary_contact_name: fullName,
+                primary_contact_email: primaryContactEmail.toLowerCase(),
+                primary_contact_mobile: primaryContactMobile,
+                country: 'HK',
+                currency: 'HKD',
+                status: 'active',
+                onboarding_completed: false,
+                onboarding_step: 1
+            })
+            .select().single();
+        if (orgError) throw new Error('Failed to create organization: ' + orgError.message);
 
-        logger.info('License activated', {
-            licenseKey: licenseKey,
-            email: primaryContactEmail,
-            plan: license.plan_type
+        // 5. Create admin user
+        const passwordHash = await encryptionUtil.hashPassword(password);
+        const username = await generateUniqueUsername(supabase, primaryContactEmail);
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .insert({
+                org_id: org.id,
+                username: username,
+                full_name: fullName,
+                email: primaryContactEmail.toLowerCase(),
+                mobile: primaryContactMobile,
+                password_hash: passwordHash,
+                role: 'super_admin',
+                status: 'active'
+            })
+            .select().single();
+        if (userError) throw new Error('Failed to create user: ' + userError.message);
+
+        // 6. Create default company
+        const { data: company } = await supabase
+            .from('companies')
+            .insert({ org_id: org.id, name: companyName, country: 'HK', status: 'active', created_by: user.id })
+            .select().single();
+        if (company) {
+            await supabase.from('users').update({ company_id: company.id }).eq('id', user.id);
+        }
+
+        // 7. Initialize license usage
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        await supabase.from('license_usage').insert({
+            license_id: license.id, month: currentMonth,
+            companies_count: 1, users_count: 1, vouchers_count: 0, sms_sent: 0
         });
+
+        logger.info('License activated', { licenseKey, email: primaryContactEmail, username, plan: license.license_type });
 
         res.json({
             success: true,
             message: 'License activated successfully!',
+            username: username,
             license: {
-                key: licenseKey,
-                plan: license.plan_type,
-                expiresAt: license.expires_at
-            }
+                key: licenseKey.toUpperCase(),
+                plan: license.license_type,
+                expiresAt: license.expiry_date
+            },
+            user: { id: user.id, username, email: user.email, fullName: user.full_name, role: user.role },
+            organization: { id: org.id, name: org.org_name }
         });
 
     } catch (error) {
-        logger.error('License activation failed', { error: error.message });
-        res.status(500).json({
-            success: false,
-            error: 'Failed to activate license'
-        });
+        logger.error('License activation failed', { error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, error: error.message || 'Failed to activate license' });
     }
 });
 
@@ -259,44 +349,42 @@ router.post('/validate-license', async (req, res) => {
         const { licenseKey } = req.body;
 
         if (!licenseKey) {
-            return res.status(400).json({
-                success: false,
-                error: 'License key is required'
-            });
+            return res.status(400).json({ success: false, error: 'License key is required' });
+        }
+
+        // Format validation first
+        if (!LicenseGenerator.validateFormat(licenseKey.toUpperCase())) {
+            return res.json({ success: true, valid: false, message: 'Invalid license key format' });
         }
 
         const supabase = getSupabaseClient();
 
         const { data: license, error } = await supabase
             .from('licenses')
-            .select('license_key, plan_type, status, expires_at')
+            .select('license_key, license_type, status, expiry_date')
             .eq('license_key', licenseKey.toUpperCase())
             .single();
 
         if (error || !license) {
-            return res.json({
-                success: true,
-                valid: false,
-                message: 'License key not found'
-            });
+            return res.json({ success: true, valid: false, message: 'License key not found' });
         }
+
+        // Check expiry
+        const isExpired = license.expiry_date && new Date(license.expiry_date) < new Date();
 
         res.json({
             success: true,
-            valid: true,
+            valid: !isExpired && license.status !== 'revoked',
             license: {
-                plan: license.plan_type,
-                status: license.status,
-                expiresAt: license.expires_at
+                plan: license.license_type,
+                status: isExpired ? 'expired' : license.status,
+                expiresAt: license.expiry_date
             }
         });
 
     } catch (error) {
         logger.error('License validation failed', { error: error.message });
-        res.status(500).json({
-            success: false,
-            error: 'Failed to validate license'
-        });
+        res.status(500).json({ success: false, error: 'Failed to validate license' });
     }
 });
 
@@ -307,94 +395,67 @@ router.post('/validate-license', async (req, res) => {
 router.get('/pricing', async (req, res) => {
     try {
         const currency = req.query.currency || 'HKD';
-        
-        // Exchange rates from HKD
-        const exchangeRates = {
-            HKD: 1,
-            USD: 0.128,
-            EUR: 0.118,
-            GBP: 0.101,
-            INR: 10.65,
-            SGD: 0.172,
-            AED: 0.47,
-            AUD: 0.196,
-            CNY: 0.918
+        const supabase = getSupabaseClient();
+
+        // Try to fetch plans from database
+        let basePrices = { trial: 0, basic: 100, premium: 799, enterprise: 1999 };
+        let planFeatures = {
+            trial: { companies: 1, users: 3, vouchersPerMonth: 50, smsCredits: 100 },
+            basic: { companies: 3, users: 10, vouchersPerMonth: 500, smsCredits: 1000 },
+            premium: { companies: 10, users: 50, vouchersPerMonth: 2000, smsCredits: 5000 },
+            enterprise: { companies: 'Unlimited', users: 'Unlimited', vouchersPerMonth: 'Unlimited', smsCredits: 'Unlimited' }
         };
 
-        const rate = exchangeRates[currency] || 1;
+        try {
+            const { data: dbPlans } = await supabase
+                .from('pricing_plans')
+                .select('code, name, base_price_hkd, max_companies, max_users, max_vouchers_per_month, sms_credits_included')
+                .eq('status', 'active')
+                .order('base_price_hkd', { ascending: true });
+
+            if (dbPlans && dbPlans.length > 0) {
+                dbPlans.forEach(p => {
+                    const code = p.code.toLowerCase();
+                    basePrices[code] = p.base_price_hkd || basePrices[code] || 0;
+                    planFeatures[code] = {
+                        companies: p.max_companies || planFeatures[code]?.companies,
+                        users: p.max_users || planFeatures[code]?.users,
+                        vouchersPerMonth: p.max_vouchers_per_month || planFeatures[code]?.vouchersPerMonth,
+                        smsCredits: p.sms_credits_included || planFeatures[code]?.smsCredits
+                    };
+                });
+            }
+        } catch (dbErr) {
+            logger.warn('Could not fetch pricing from DB, using defaults', { error: dbErr.message });
+        }
+
+        // Exchange rates from HKD
+        const exchangeRates = {
+            HKD: 1, USD: 0.128, EUR: 0.118, GBP: 0.101, INR: 10.65,
+            SGD: 0.172, AED: 0.47, AUD: 0.196, CNY: 0.918
+        };
         const symbols = {
             HKD: 'HK$', USD: '$', EUR: '€', GBP: '£', INR: '₹',
             SGD: 'S$', AED: 'AED', AUD: 'A$', CNY: '¥'
         };
 
-        const plans = [
-            {
-                code: 'trial',
-                name: 'Trial',
-                price: 0,
-                displayPrice: `${symbols[currency] || currency} 0`,
-                period: '30 days',
-                features: {
-                    companies: 1,
-                    users: 3,
-                    vouchersPerMonth: 50,
-                    smsCredits: 100
-                }
-            },
-            {
-                code: 'basic',
-                name: 'Basic',
-                price: Math.round(720 * rate),
-                displayPrice: `${symbols[currency] || currency} ${Math.round(720 * rate).toLocaleString()}`,
-                period: 'monthly',
-                features: {
-                    companies: 3,
-                    users: 10,
-                    vouchersPerMonth: 500,
-                    smsCredits: 1000
-                }
-            },
-            {
-                code: 'premium',
-                name: 'Premium',
-                price: Math.round(1920 * rate),
-                displayPrice: `${symbols[currency] || currency} ${Math.round(1920 * rate).toLocaleString()}`,
-                period: 'monthly',
-                features: {
-                    companies: 10,
-                    users: 50,
-                    vouchersPerMonth: 2000,
-                    smsCredits: 5000
-                }
-            },
-            {
-                code: 'enterprise',
-                name: 'Enterprise',
-                price: null,
-                displayPrice: 'Custom',
-                period: 'monthly',
-                features: {
-                    companies: 'Unlimited',
-                    users: 'Unlimited',
-                    vouchersPerMonth: 'Unlimited',
-                    smsCredits: 'Unlimited'
-                }
-            }
-        ];
+        const rate = exchangeRates[currency] || 1;
+        const symbol = symbols[currency] || currency;
 
-        res.json({
-            success: true,
-            currency: currency,
-            symbol: symbols[currency] || currency,
-            plans: plans
-        });
+        const plans = Object.entries(basePrices).map(([code, price]) => ({
+            code,
+            name: code.charAt(0).toUpperCase() + code.slice(1),
+            price: price === 0 ? 0 : Math.round(price * rate),
+            displayPrice: price === 0 ? `${symbol} 0` : `${symbol} ${Math.round(price * rate).toLocaleString()}`,
+            period: code === 'trial' ? '30 days' : 'monthly',
+            features: planFeatures[code] || {}
+        }));
+
+        res.json({ success: true, currency, symbol, plans });
 
     } catch (error) {
         logger.error('Failed to fetch pricing', { error: error.message });
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch pricing information'
-        });
+        res.status(500).json({ success: false, error: 'Failed to fetch pricing information' });
     }
 });
 
