@@ -149,6 +149,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate (1 HKD =)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Basic Plan Price</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Premium Plan Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enterprise Plan Price</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
@@ -172,7 +173,7 @@
     </div>
 
     <!-- Add Currency Modal -->
-    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center">
         <div class="bg-white rounded-xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Add Currency</h3>
@@ -212,11 +213,11 @@
     <script>
         lucide.createIcons();
 
-        // Base prices in HKD
-        const basePrices = {
-            basic: 720,
-            premium: 1920,
-            enterprise: 4800
+        // Plan prices in HKD — will be dynamically loaded from the pricing API
+        let planPrices = {
+            basic: 0,
+            premium: 0,
+            enterprise: 0
         };
 
         // Currency data
@@ -251,9 +252,57 @@
             { country: 'Malaysia', code: 'MY', currency: 'MYR' },
         ];
 
-        function formatPrice(basePrice, rate, symbol, round = true) {
-            const converted = basePrice * rate;
-            const formatted = round ? Math.round(converted) : converted.toFixed(2);
+        /**
+         * Fetch actual plan prices from the pricing API.
+         * Falls back to reading from localStorage or 0 if API is unavailable.
+         */
+        async function loadPlanPrices() {
+            try {
+                const token = localStorage.getItem('token');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const response = await fetch('/api/pricing/plans', { headers });
+                if (!response.ok) throw new Error('API returned ' + response.status);
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.plans)) {
+                    data.plans.forEach(plan => {
+                        const code = (plan.plan_code || '').toLowerCase();
+                        const price = parseFloat(plan.price_monthly) || 0;
+                        if (code === 'basic')      planPrices.basic = price;
+                        if (code === 'premium')    planPrices.premium = price;
+                        if (code === 'enterprise') planPrices.enterprise = price;
+                    });
+                }
+                console.log('Plan prices loaded from API:', planPrices);
+            } catch (err) {
+                console.warn('Could not fetch plan prices from API, using fallback.', err);
+                // Fallback: try localStorage cache
+                const cached = localStorage.getItem('planPrices');
+                if (cached) {
+                    try { planPrices = JSON.parse(cached); } catch(e) {}
+                }
+            }
+            // Cache for offline use
+            localStorage.setItem('planPrices', JSON.stringify(planPrices));
+        }
+
+        /**
+         * Round a converted price to the nearest "clean" number.
+         * - For values >= 1000 → round to nearest 1000
+         * - For values >= 100  → round to nearest 100
+         * - For values >= 10   → round to nearest 10
+         * - Otherwise          → round to nearest integer
+         */
+        function roundToNearest(value) {
+            if (value >= 1000) return Math.round(value / 1000) * 1000;
+            if (value >= 100)  return Math.round(value / 100) * 100;
+            if (value >= 10)   return Math.round(value / 10) * 10;
+            return Math.round(value);
+        }
+
+        function formatPrice(planPrice, rate, symbol, round = true) {
+            const converted = planPrice * rate;
+            const formatted = round ? roundToNearest(converted) : converted.toFixed(2);
             return `${symbol} ${Number(formatted).toLocaleString()}`;
         }
 
@@ -275,10 +324,13 @@
                             ${curr.code === 'HKD' ? 'disabled' : ''}>
                     </td>
                     <td class="px-6 py-4 font-medium text-indigo-600">
-                        ${formatPrice(basePrices.basic, curr.rate, curr.symbol)}
+                        ${formatPrice(planPrices.basic, curr.rate, curr.symbol)}
                     </td>
                     <td class="px-6 py-4 font-medium text-indigo-600">
-                        ${formatPrice(basePrices.premium, curr.rate, curr.symbol)}
+                        ${formatPrice(planPrices.premium, curr.rate, curr.symbol)}
+                    </td>
+                    <td class="px-6 py-4 font-medium text-purple-600">
+                        ${formatPrice(planPrices.enterprise, curr.rate, curr.symbol)}
                     </td>
                     <td class="px-6 py-4">
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -363,12 +415,16 @@
         }
 
         function openAddCurrencyModal() {
-            document.getElementById('addModal').classList.remove('hidden');
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             lucide.createIcons();
         }
 
         function closeAddModal() {
-            document.getElementById('addModal').classList.add('hidden');
+            const modal = document.getElementById('addModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             document.getElementById('addCurrencyForm').reset();
         }
 
@@ -426,8 +482,10 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+            // Load actual plan prices from the Pricing Management settings first
+            await loadPlanPrices();
             renderCurrencyTable();
             renderCountryMappings();
         });

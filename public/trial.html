@@ -141,7 +141,7 @@
         <!-- Pricing Preview -->
         <div id="pricing-preview" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
             <p class="text-sm text-gray-600 text-center">
-                After trial, plans start from <span id="local-price" class="font-bold text-cyan-600">HK$ 720</span>/month
+                After trial, plans start from <span id="local-price" class="font-bold text-cyan-600">HK$ 100</span>/month
             </p>
         </div>
     </div>
@@ -201,11 +201,11 @@
             KRW: 170
         };
 
-        // Base prices in HKD
+        // Base prices in HKD (must match Pricing Management settings)
         const basePrices = {
-            basic: 720,
-            premium: 1920,
-            enterprise: 'Custom'
+            basic: 100,
+            premium: 799,
+            enterprise: 1999
         };
 
         // Populate country dropdown
@@ -268,7 +268,13 @@
         // Update price preview based on currency
         function updatePricePreview(currency, symbol) {
             const rate = exchangeRates[currency] || 1;
-            const localPrice = Math.round(basePrices.basic * rate);
+            const raw = basePrices.basic * rate;
+            // Round to nearest clean number based on magnitude
+            let localPrice;
+            if (raw >= 1000) localPrice = Math.round(raw / 1000) * 1000;
+            else if (raw >= 100) localPrice = Math.round(raw / 100) * 100;
+            else if (raw >= 10) localPrice = Math.round(raw / 10) * 10;
+            else localPrice = Math.round(raw);
             
             const preview = document.getElementById('pricing-preview');
             const priceElement = document.getElementById('local-price');
