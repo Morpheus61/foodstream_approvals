@@ -214,10 +214,11 @@
         lucide.createIcons();
 
         // Plan prices in HKD — will be dynamically loaded from the pricing API
+        // Fallback values match current Pricing Management settings
         let planPrices = {
-            basic: 0,
-            premium: 0,
-            enterprise: 0
+            basic: 100,
+            premium: 799,
+            enterprise: 1999
         };
 
         // Currency data
@@ -254,36 +255,52 @@
 
         /**
          * Fetch actual plan prices from the pricing API.
-         * Falls back to reading from localStorage or 0 if API is unavailable.
+         * Tries the admin endpoint first (same as pricing.html uses),
+         * then the public endpoint, then falls back to hardcoded defaults.
          */
         async function loadPlanPrices() {
-            try {
-                const token = localStorage.getItem('token');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const response = await fetch('/api/pricing/plans', { headers });
-                if (!response.ok) throw new Error('API returned ' + response.status);
-                const data = await response.json();
+            const token = localStorage.getItem('token');
+            const endpoints = [
+                { url: '/api/pricing/admin/plans', needsAuth: true },
+                { url: '/api/pricing/plans', needsAuth: false }
+            ];
 
-                if (data.success && Array.isArray(data.plans)) {
-                    data.plans.forEach(plan => {
-                        const code = (plan.plan_code || '').toLowerCase();
-                        const price = parseFloat(plan.price_monthly) || 0;
-                        if (code === 'basic')      planPrices.basic = price;
-                        if (code === 'premium')    planPrices.premium = price;
-                        if (code === 'enterprise') planPrices.enterprise = price;
-                    });
-                }
-                console.log('Plan prices loaded from API:', planPrices);
-            } catch (err) {
-                console.warn('Could not fetch plan prices from API, using fallback.', err);
-                // Fallback: try localStorage cache
-                const cached = localStorage.getItem('planPrices');
-                if (cached) {
-                    try { planPrices = JSON.parse(cached); } catch(e) {}
+            for (const endpoint of endpoints) {
+                try {
+                    const headers = {};
+                    if (endpoint.needsAuth && token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    const response = await fetch(endpoint.url, { headers });
+                    if (!response.ok) continue;
+                    const data = await response.json();
+
+                    if (data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+                        data.plans.forEach(plan => {
+                            const code = (plan.plan_code || '').toLowerCase();
+                            const price = parseFloat(plan.price_monthly) || 0;
+                            if (code === 'basic')      planPrices.basic = price;
+                            if (code === 'premium')    planPrices.premium = price;
+                            if (code === 'enterprise') planPrices.enterprise = price;
+                        });
+                        console.log('Plan prices loaded from API:', planPrices);
+                        localStorage.setItem('planPrices', JSON.stringify(planPrices));
+                        return; // success — stop trying
+                    }
+                } catch (err) {
+                    console.warn(`Endpoint ${endpoint.url} failed:`, err.message);
                 }
             }
-            // Cache for offline use
-            localStorage.setItem('planPrices', JSON.stringify(planPrices));
+
+            // All API calls failed — try localStorage cache, else keep hardcoded defaults
+            const cached = localStorage.getItem('planPrices');
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (parsed.basic > 0) planPrices = parsed;
+                } catch(e) {}
+            }
+            console.warn('Using fallback plan prices:', planPrices);
         }
 
         /**
