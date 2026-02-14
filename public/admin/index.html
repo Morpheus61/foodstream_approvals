@@ -370,6 +370,8 @@
                 });
                 
                 if (response.status === 401) {
+                    // Token expired — stop auto-refresh and redirect once
+                    if (refreshInterval) clearInterval(refreshInterval);
                     window.location.href = '/app.html';
                     return;
                 }
@@ -501,6 +503,8 @@
         }
 
         // Initialize - with REAL authentication
+        let refreshInterval = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const isAuthed = await checkAuth();
             if (isAuthed) {
@@ -508,12 +512,12 @@
                 loadRecentSubscriptions();
                 loadRecentActivity();
                 
-                // Auto-refresh every 30 seconds
-                setInterval(() => {
+                // Auto-refresh every 60 seconds (not 30 to reduce load)
+                refreshInterval = setInterval(() => {
                     loadDashboardStats();
                     loadRecentSubscriptions();
                     loadRecentActivity();
-                }, 30000);
+                }, 60000);
             }
         });
     </script>
