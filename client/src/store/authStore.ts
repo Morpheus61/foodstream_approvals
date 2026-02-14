@@ -3,7 +3,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User, AuthState } from '@/types';
 import api from '@/lib/api';
 
+interface LicenseInfo {
+  plan: string;
+  status: string;
+  expiresAt: string;
+  activatedAt?: string;
+}
+
 interface AuthStore extends AuthState {
+  licenseInfo: LicenseInfo | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
@@ -17,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       isAuthenticated: false,
       isLoading: false,
+      licenseInfo: null,
 
       login: async (username: string, password: string) => {
         set({ isLoading: true });
@@ -24,12 +33,13 @@ export const useAuthStore = create<AuthStore>()(
           const response = await api.post('/auth/login', { username, password });
           
           if (response.data.success) {
-            const { token, user } = response.data;
+            const { token, user, license } = response.data;
             set({
               token,
               user,
               isAuthenticated: true,
               isLoading: false,
+              licenseInfo: license || null,
             });
           } else {
             throw new Error(response.data.error || 'Login failed');
@@ -52,6 +62,7 @@ export const useAuthStore = create<AuthStore>()(
           user: null,
           token: null,
           isAuthenticated: false,
+          licenseInfo: null,
         });
       },
 
@@ -79,7 +90,7 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: 'foodstream-auth',
       storage: createJSONStorage(() => sessionStorage), // Use sessionStorage instead of localStorage for better security
-      partialize: (state) => ({ token: state.token, user: state.user }),
+      partialize: (state) => ({ token: state.token, user: state.user, licenseInfo: state.licenseInfo }),
     }
   )
 );

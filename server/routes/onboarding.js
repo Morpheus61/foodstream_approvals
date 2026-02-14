@@ -266,24 +266,18 @@ router.post('/activate-license', async (req, res) => {
         const {
             licenseKey,
             primaryContactEmail,
-            primaryContactMobile,
-            companyName,
-            fullName,
             password
         } = req.body;
 
-        if (!licenseKey || !primaryContactEmail || !primaryContactMobile || !companyName || !fullName || !password) {
+        if (!licenseKey || !primaryContactEmail || !password) {
             return res.status(400).json({
                 success: false,
-                error: 'All fields are required: licenseKey, email, mobile, companyName, fullName, password'
+                error: 'All fields are required: licenseKey, email, password'
             });
         }
         if (password.length < 8) {
             return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
         }
-
-        // Sanitize mobile: strip spaces/dashes, limit to 20 chars for VARCHAR(20)
-        const sanitizedMobile = primaryContactMobile.replace(/[\s\-()]/g, '').substring(0, 20);
 
         const supabase = getSupabaseClient();
 
@@ -312,6 +306,16 @@ router.post('/activate-license', async (req, res) => {
         if (license.status === 'revoked' || license.status === 'suspended') {
             return res.status(400).json({ success: false, error: 'This license has been ' + license.status });
         }
+
+        // Verify email matches the one stored in the license record
+        if (license.licensee_email && license.licensee_email.toLowerCase() !== primaryContactEmail.toLowerCase()) {
+            return res.status(400).json({ success: false, error: 'Email does not match the email associated with this license key' });
+        }
+
+        // Pull company name, full name, and mobile from the license record (entered by admin at license creation)
+        const companyName = license.licensee_company || 'My Company';
+        const fullName = license.licensee_name || primaryContactEmail.split('@')[0];
+        const sanitizedMobile = (license.licensee_mobile || '').replace(/[\s\-()]/g, '').substring(0, 20);
 
         // Check duplicate email
         const { data: existingUser } = await supabase

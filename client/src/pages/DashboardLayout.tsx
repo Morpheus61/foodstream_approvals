@@ -8,9 +8,10 @@ import VoucherCreate from '@/components/vouchers/VoucherCreate';
 import ApprovalQueue from '@/components/vouchers/ApprovalQueue';
 import SettingsPage from '@/components/settings/SettingsPage';
 import { cn } from '@/lib/utils';
+import { Shield, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function DashboardLayout() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, licenseInfo } = useAuthStore();
   const [currentView, setCurrentView] = useState<ViewType>('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -107,8 +108,55 @@ export default function DashboardLayout() {
           isMobile ? 'ml-0 p-3 pt-14' : (sidebarCollapsed ? 'ml-16 p-6' : 'ml-64 p-6')
         )}
       >
+        <LicenseBanner license={licenseInfo} />
         {renderView()}
       </main>
+    </div>
+  );
+}
+
+// License Validity Banner
+function LicenseBanner({ license }: { license: { plan: string; status: string; expiresAt: string; activatedAt?: string } | null }) {
+  if (!license) return null;
+
+  const expiryDate = license.expiresAt ? new Date(license.expiresAt) : null;
+  const now = new Date();
+  const daysLeft = expiryDate ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isExpired = daysLeft !== null && daysLeft <= 0;
+  const isExpiringSoon = daysLeft !== null && daysLeft > 0 && daysLeft <= 30;
+
+  const planLabel = (license.plan || 'unknown').charAt(0).toUpperCase() + (license.plan || 'unknown').slice(1);
+  const formattedExpiry = expiryDate
+    ? expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : 'N/A';
+
+  let bgClass = 'bg-green-50 border-green-200 text-green-800';
+  let Icon = Shield;
+  if (isExpired) {
+    bgClass = 'bg-red-50 border-red-200 text-red-800';
+    Icon = XCircle;
+  } else if (isExpiringSoon) {
+    bgClass = 'bg-amber-50 border-amber-200 text-amber-800';
+    Icon = AlertTriangle;
+  }
+
+  return (
+    <div className={cn(bgClass, 'border rounded-lg px-4 py-2.5 mb-4 flex items-center justify-between text-sm')}>
+      <div className="flex items-center gap-3">
+        <Icon className="w-4 h-4" />
+        <span className="font-semibold">{planLabel} Plan</span>
+        <span className="opacity-50">|</span>
+        <span>Status: {isExpired ? 'Expired' : license.status?.charAt(0).toUpperCase() + license.status?.slice(1)}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        {daysLeft !== null && !isExpired && (
+          <>
+            <span className="font-medium">{daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining</span>
+            <span className="opacity-50">|</span>
+          </>
+        )}
+        <span>{isExpired ? 'Expired' : 'Expires'}: {formattedExpiry}</span>
+      </div>
     </div>
   );
 }

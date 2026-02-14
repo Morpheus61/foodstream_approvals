@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { KeyRound, Mail, Phone, AlertCircle, CheckCircle2, User, Building2, Lock } from 'lucide-react';
+import { KeyRound, Mail, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LicenseActivationPage() {
@@ -18,9 +18,6 @@ export default function LicenseActivationPage() {
   const [formData, setFormData] = useState({
     licenseKey: '',
     email: '',
-    mobile: '',
-    fullName: '',
-    companyName: '',
     password: '',
     confirmPassword: '',
   });
@@ -48,16 +45,6 @@ export default function LicenseActivationPage() {
       return;
     }
 
-    if (!formData.fullName.trim()) {
-      setError('Full name is required');
-      return;
-    }
-
-    if (!formData.companyName.trim()) {
-      setError('Company name is required');
-      return;
-    }
-
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
@@ -74,9 +61,6 @@ export default function LicenseActivationPage() {
       const response = await onboardingService.activateLicense(
         formData.licenseKey,
         formData.email,
-        formData.mobile,
-        formData.companyName,
-        formData.fullName,
         formData.password
       );
 
@@ -200,38 +184,6 @@ export default function LicenseActivationPage() {
                 </p>
               </div>
 
-              {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="fullName"
-                    placeholder="John Smith"
-                    value={formData.fullName}
-                    onChange={(e) => handleChange('fullName', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Company Name */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="companyName"
-                    placeholder="Acme Corporation"
-                    value={formData.companyName}
-                    onChange={(e) => handleChange('companyName', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Primary Contact Email *</Label>
@@ -243,23 +195,6 @@ export default function LicenseActivationPage() {
                     placeholder="admin@company.com"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Mobile */}
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Contact Mobile *</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="mobile"
-                    type="tel"
-                    placeholder="+852 9123 4567"
-                    value={formData.mobile}
-                    onChange={(e) => handleChange('mobile', e.target.value)}
                     className="pl-10"
                     required
                   />

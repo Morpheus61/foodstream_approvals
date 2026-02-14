@@ -106,6 +106,7 @@ router.post('/login', authLimiter, async (req, res) => {
         
         // Fetch org separately if user has org_id
         let org = null;
+        let license = null;
         if (user.org_id) {
             const { data: orgData } = await supabase
                 .from('licensed_orgs')
@@ -113,6 +114,16 @@ router.post('/login', authLimiter, async (req, res) => {
                 .eq('id', user.org_id)
                 .single();
             org = orgData;
+
+            // Fetch license info for validity display
+            if (orgData && orgData.license_id) {
+                const { data: licenseData } = await supabase
+                    .from('licenses')
+                    .select('license_key, license_type, status, expiry_date, activation_date')
+                    .eq('id', orgData.license_id)
+                    .single();
+                license = licenseData;
+            }
         }
         
         // Check JWT_SECRET is configured
@@ -150,7 +161,13 @@ router.post('/login', authLimiter, async (req, res) => {
                 role: user.role,
                 orgId: user.org_id,
                 org: org
-            }
+            },
+            license: license ? {
+                plan: license.license_type,
+                status: license.status,
+                expiresAt: license.expiry_date,
+                activatedAt: license.activation_date
+            } : null
         });
     } catch (error) {
         logger.error('Login error', { error: error.message, stack: error.stack });
