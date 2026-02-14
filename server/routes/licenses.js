@@ -139,33 +139,49 @@ router.post('/', authenticate, authorize('super_admin', 'admin'), async (req, re
 
         const licenseKey = LicenseGenerator.generateKey(licenseeEmail, licenseType, expiry.toISOString());
 
+        // Sanitize mobile: strip spaces/dashes, limit to 20 chars
+        const sanitizedMobile = (licenseeMobile || '').replace(/[\s\-()]/g, '').substring(0, 20);
+
+        const licensePayload = {
+            license_key: licenseKey,
+            license_type: licenseType,
+            licensee_name: licenseeName.substring(0, 255),
+            licensee_email: licenseeEmail.toLowerCase().substring(0, 255),
+            licensee_mobile: sanitizedMobile,
+            licensee_company: (licenseeCompany || '').substring(0, 255),
+            status: 'pending',
+            max_companies: maxCompanies || defaults.maxCompanies,
+            max_users: maxUsers || defaults.maxUsers,
+            max_vouchers_per_month: maxVouchersPerMonth || defaults.maxVouchers,
+            sms_credits: smsCredits || defaults.sms,
+            issued_date: new Date().toISOString(),
+            expiry_date: expiry.toISOString(),
+            features: features || {
+                print: true, reports: true, api_access: licenseType === 'enterprise',
+                custom_domain: licenseType === 'enterprise', white_label: true,
+                multi_company: licenseType !== 'trial', advanced_analytics: ['premium', 'enterprise'].includes(licenseType)
+            },
+            notes: notes || '',
+            created_by: req.user.id
+        };
+
+        logger.info('Attempting admin license creation', { licenseType, licenseeEmail, licenseKey });
+
         const { data: license, error } = await supabase
             .from('licenses')
-            .insert({
-                license_key: licenseKey,
-                license_type: licenseType,
-                licensee_name: licenseeName,
-                licensee_email: licenseeEmail.toLowerCase(),
-                licensee_mobile: licenseeMobile || '',
-                licensee_company: licenseeCompany || '',
-                status: 'pending',
-                max_companies: maxCompanies || defaults.maxCompanies,
-                max_users: maxUsers || defaults.maxUsers,
-                max_vouchers_per_month: maxVouchersPerMonth || defaults.maxVouchers,
-                sms_credits: smsCredits || defaults.sms,
-                issued_date: new Date().toISOString(),
-                expiry_date: expiry.toISOString(),
-                features: features || {
-                    print: true, reports: true, api_access: licenseType === 'enterprise',
-                    custom_domain: licenseType === 'enterprise', white_label: true,
-                    multi_company: licenseType !== 'trial', advanced_analytics: ['premium', 'enterprise'].includes(licenseType)
-                },
-                notes: notes || '',
-                created_by: req.user.id
-            })
+            .insert(licensePayload)
             .select().single();
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Admin license creation failed', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                status: error.status
+            });
+            throw error;
+        }
 
         logger.info('License created', {
             licenseKey, licenseType, licenseeEmail,

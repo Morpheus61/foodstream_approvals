@@ -71,7 +71,25 @@ router.post('/start-trial', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
         }
 
+        // Sanitize mobile: strip spaces/dashes, limit to 20 chars for VARCHAR(20)
+        const sanitizedMobile = mobile.replace(/[\s\-()]/g, '').substring(0, 20);
+        if (!sanitizedMobile) {
+            return res.status(400).json({ success: false, error: 'Valid mobile number is required' });
+        }
+
         const supabase = getSupabaseClient();
+
+        // Verify database connectivity before proceeding
+        const { error: healthError } = await supabase.from('licenses').select('id').limit(1);
+        if (healthError) {
+            logger.error('Database connectivity check failed', {
+                message: healthError.message,
+                code: healthError.code,
+                details: healthError.details,
+                hint: healthError.hint
+            });
+            return res.status(503).json({ success: false, error: 'Database connection error. Please try again later.' });
+        }
 
         // Check duplicate email
         const { data: existingUser } = await supabase
@@ -86,27 +104,57 @@ router.post('/start-trial', async (req, res) => {
         const licenseKey = LicenseGenerator.generateKey(email.toLowerCase(), 'trial', trialEndDate.toISOString());
 
         // 2. Create license record
+        const now = new Date().toISOString();
+        const licensePayload = {
+            license_key: licenseKey,
+            license_type: 'trial',
+            licensee_name: fullName.substring(0, 255),
+            licensee_email: email.toLowerCase().substring(0, 255),
+            licensee_mobile: sanitizedMobile,
+            licensee_company: companyName.substring(0, 255),
+            status: 'active',
+            max_companies: 1,
+            max_users: 3,
+            max_vouchers_per_month: 50,
+            sms_credits: 100,
+            issued_date: now,
+            activation_date: now,
+            expiry_date: trialEndDate.toISOString(),
+            features: {
+                print: true,
+                reports: true,
+                api_access: false,
+                custom_domain: false,
+                white_label: true,
+                multi_company: false,
+                advanced_analytics: false
+            }
+        };
+
+        logger.info('Attempting license creation', { email: email.toLowerCase(), licenseKey, mobile: sanitizedMobile });
+
         const { data: license, error: licenseError } = await supabase
             .from('licenses')
-            .insert({
-                license_key: licenseKey,
-                license_type: 'trial',
-                licensee_name: fullName,
-                licensee_email: email.toLowerCase(),
-                licensee_mobile: mobile,
-                licensee_company: companyName,
-                status: 'active',
-                max_companies: 1,
-                max_users: 3,
-                max_vouchers_per_month: 50,
-                sms_credits: 100,
-                issued_date: new Date().toISOString(),
-                activation_date: new Date().toISOString(),
-                expiry_date: trialEndDate.toISOString(),
-                features: { print: true, reports: true, api_access: false, custom_domain: false, white_label: true, multi_company: false, advanced_analytics: false }
-            })
-            .select().single();
-        if (licenseError) throw new Error('Failed to create license: ' + licenseError.message);
+            .insert(licensePayload)
+            .select()
+            .single();
+
+        if (licenseError) {
+            logger.error('License creation failed', {
+                message: licenseError.message,
+                code: licenseError.code,
+                details: licenseError.details,
+                hint: licenseError.hint,
+                status: licenseError.status,
+                payload: { ...licensePayload, license_key: '***' }
+            });
+            throw new Error('Failed to create license: ' + (licenseError.message || licenseError.code || 'Unknown database error'));
+        }
+
+        if (!license || !license.id) {
+            logger.error('License creation returned no data', { licenseError, license });
+            throw new Error('Failed to create license: No data returned from database');
+        }
 
         // 3. Create organization (licensed_orgs)
         const orgSlug = await generateOrgSlug(supabase, companyName);
@@ -118,7 +166,7 @@ router.post('/start-trial', async (req, res) => {
                 org_slug: orgSlug,
                 primary_contact_name: fullName,
                 primary_contact_email: email.toLowerCase(),
-                primary_contact_mobile: mobile,
+                primary_contact_mobile: sanitizedMobile,
                 country: country || 'HK',
                 currency: currency || 'HKD',
                 status: 'active',
@@ -127,8 +175,12 @@ router.post('/start-trial', async (req, res) => {
             })
             .select().single();
         if (orgError) {
+            logger.error('Organization creation failed', {
+                message: orgError.message, code: orgError.code,
+                details: orgError.details, hint: orgError.hint
+            });
             await supabase.from('licenses').delete().eq('id', license.id);
-            throw new Error('Failed to create organization: ' + orgError.message);
+            throw new Error('Failed to create organization: ' + (orgError.message || 'Unknown error'));
         }
 
         // 4. Create admin user (password hashed with bcrypt)
@@ -141,16 +193,20 @@ router.post('/start-trial', async (req, res) => {
                 username: username,
                 full_name: fullName,
                 email: email.toLowerCase(),
-                mobile: mobile,
+                mobile: sanitizedMobile,
                 password_hash: passwordHash,
                 role: 'super_admin',
                 status: 'active'
             })
             .select().single();
         if (userError) {
+            logger.error('User creation failed', {
+                message: userError.message, code: userError.code,
+                details: userError.details, hint: userError.hint
+            });
             await supabase.from('licensed_orgs').delete().eq('id', org.id);
             await supabase.from('licenses').delete().eq('id', license.id);
-            throw new Error('Failed to create user: ' + userError.message);
+            throw new Error('Failed to create user: ' + (userError.message || 'Unknown error'));
         }
 
         // 5. Create default company
@@ -216,6 +272,9 @@ router.post('/activate-license', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
         }
 
+        // Sanitize mobile: strip spaces/dashes, limit to 20 chars for VARCHAR(20)
+        const sanitizedMobile = primaryContactMobile.replace(/[\s\-()]/g, '').substring(0, 20);
+
         const supabase = getSupabaseClient();
 
         // 1. Validate the license key format
@@ -259,11 +318,17 @@ router.post('/activate-license', async (req, res) => {
                 activation_date: new Date().toISOString(),
                 licensee_name: fullName,
                 licensee_email: primaryContactEmail.toLowerCase(),
-                licensee_mobile: primaryContactMobile,
+                licensee_mobile: sanitizedMobile,
                 licensee_company: companyName
             })
             .eq('id', license.id);
-        if (updateError) throw new Error('Failed to activate license: ' + updateError.message);
+        if (updateError) {
+            logger.error('License activation update failed', {
+                message: updateError.message, code: updateError.code,
+                details: updateError.details, hint: updateError.hint
+            });
+            throw new Error('Failed to activate license: ' + (updateError.message || 'Unknown error'));
+        }
 
         // 4. Create organization
         const orgSlug = await generateOrgSlug(supabase, companyName);
@@ -275,7 +340,7 @@ router.post('/activate-license', async (req, res) => {
                 org_slug: orgSlug,
                 primary_contact_name: fullName,
                 primary_contact_email: primaryContactEmail.toLowerCase(),
-                primary_contact_mobile: primaryContactMobile,
+                primary_contact_mobile: sanitizedMobile,
                 country: 'HK',
                 currency: 'HKD',
                 status: 'active',
@@ -283,7 +348,13 @@ router.post('/activate-license', async (req, res) => {
                 onboarding_step: 1
             })
             .select().single();
-        if (orgError) throw new Error('Failed to create organization: ' + orgError.message);
+        if (orgError) {
+            logger.error('Organization creation failed (activation)', {
+                message: orgError.message, code: orgError.code,
+                details: orgError.details, hint: orgError.hint
+            });
+            throw new Error('Failed to create organization: ' + (orgError.message || 'Unknown error'));
+        }
 
         // 5. Create admin user
         const passwordHash = await encryptionUtil.hashPassword(password);
@@ -295,13 +366,19 @@ router.post('/activate-license', async (req, res) => {
                 username: username,
                 full_name: fullName,
                 email: primaryContactEmail.toLowerCase(),
-                mobile: primaryContactMobile,
+                mobile: sanitizedMobile,
                 password_hash: passwordHash,
                 role: 'super_admin',
                 status: 'active'
             })
             .select().single();
-        if (userError) throw new Error('Failed to create user: ' + userError.message);
+        if (userError) {
+            logger.error('User creation failed (activation)', {
+                message: userError.message, code: userError.code,
+                details: userError.details, hint: userError.hint
+            });
+            throw new Error('Failed to create user: ' + (userError.message || 'Unknown error'));
+        }
 
         // 6. Create default company
         const { data: company } = await supabase
@@ -456,6 +533,53 @@ router.get('/pricing', async (req, res) => {
     } catch (error) {
         logger.error('Failed to fetch pricing', { error: error.message });
         res.status(500).json({ success: false, error: 'Failed to fetch pricing information' });
+    }
+});
+
+// =====================================================
+// DATABASE HEALTH CHECK (Debug endpoint)
+// =====================================================
+
+/**
+ * GET /api/onboarding/health
+ * Check database connectivity and table access
+ */
+router.get('/health', async (req, res) => {
+    try {
+        const supabase = getSupabaseClient();
+        const results = {};
+
+        // Test each critical table
+        const tables = ['licenses', 'licensed_orgs', 'users', 'companies', 'license_usage'];
+        for (const table of tables) {
+            const { data, error } = await supabase.from(table).select('id').limit(1);
+            results[table] = {
+                accessible: !error,
+                error: error ? { message: error.message, code: error.code, hint: error.hint } : null,
+                rowCount: data ? data.length : 0
+            };
+        }
+
+        // Test insert capability on licenses (dry run via select with impossible filter)
+        const allAccessible = Object.values(results).every(r => r.accessible);
+
+        res.json({
+            success: true,
+            database: allAccessible ? 'connected' : 'partial',
+            supabaseUrl: process.env.SUPABASE_URL ? '✓ configured' : '✗ missing',
+            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ configured' : '✗ missing',
+            tables: results
+        });
+
+    } catch (error) {
+        logger.error('Health check failed', { error: error.message });
+        res.status(500).json({
+            success: false,
+            database: 'disconnected',
+            error: error.message,
+            supabaseUrl: process.env.SUPABASE_URL ? '✓ configured' : '✗ missing',
+            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ configured' : '✗ missing'
+        });
     }
 });
 
