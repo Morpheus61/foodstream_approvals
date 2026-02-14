@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { onboardingService } from '@/services/authService';
+import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,10 +69,26 @@ export default function LicenseActivationPage() {
         // Store the license key for API requests
         localStorage.setItem('licenseKey', formData.licenseKey);
 
+        const data = response as any;
+
+        if (data.alreadyActivated && data.token && data.user) {
+          // License already activated — server logged us in directly
+          const store = useAuthStore.getState();
+          store.setUser(data.user);
+          useAuthStore.setState({
+            token: data.token,
+            isAuthenticated: true,
+            licenseInfo: data.license || null,
+          });
+          toast.success(data.message || 'Logged in successfully!');
+          navigate('/dashboard');
+          return;
+        }
+
         setResultData({
-          username: (response as any).username,
+          username: data.username,
           licenseKey: formData.licenseKey,
-          plan: (response as any).license?.plan,
+          plan: data.license?.plan,
         });
         setSuccess(true);
         toast.success('License activated successfully!');

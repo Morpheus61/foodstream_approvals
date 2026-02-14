@@ -151,9 +151,27 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        showToast('License activated successfully!', 'success');
                         localStorage.setItem('licenseKey', licenseKey);
-                        onActivated(licenseKey);
+                        
+                        if (data.alreadyActivated && data.token && data.user) {
+                            // License was already activated — server logged us in directly
+                            localStorage.setItem('token', data.token);
+                            localStorage.setItem('user', JSON.stringify(data.user));
+                            if (data.license) {
+                                localStorage.setItem('licenseInfo', JSON.stringify(data.license));
+                            }
+                            showToast(data.message || 'Logged in successfully!', 'success');
+                            
+                            // Redirect admins to admin dashboard
+                            if (data.user.role === 'super_admin' || data.user.role === 'org_admin') {
+                                window.location.href = '/admin/';
+                            } else {
+                                onAdminLogin(data.user);
+                            }
+                        } else {
+                            showToast('License activated successfully!', 'success');
+                            onActivated(licenseKey);
+                        }
                     } else {
                         showToast(data.error || 'Activation failed', 'error');
                     }

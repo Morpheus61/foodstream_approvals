@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { getSupabaseClient } = require('../config/database');
 const logger = require('../utils/logger');
 const LicenseGenerator = require('../utils/licenseGenerator');
@@ -298,7 +299,65 @@ router.post('/activate-license', async (req, res) => {
         }
 
         if (license.status === 'active') {
-            return res.status(400).json({ success: false, error: 'This license is already activated' });
+            // License already activated — try to log the user in with provided credentials
+            const { data: existingUser } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', primaryContactEmail.toLowerCase())
+                .eq('status', 'active')
+                .single();
+
+            if (!existingUser) {
+                return res.status(400).json({ success: false, error: 'This license is already activated. Please use the Login page to sign in.' });
+            }
+
+            const isValid = await encryptionUtil.verifyPassword(password, existingUser.password_hash);
+            if (!isValid) {
+                return res.status(401).json({ success: false, error: 'This license is already activated. Incorrect password — please use Login instead.' });
+            }
+
+            // Fetch org info
+            let org = null;
+            if (existingUser.org_id) {
+                const { data: orgData } = await supabase
+                    .from('licensed_orgs')
+                    .select('*')
+                    .eq('id', existingUser.org_id)
+                    .single();
+                org = orgData;
+            }
+
+            // Generate JWT
+            const token = jwt.sign(
+                { userId: existingUser.id, orgId: existingUser.org_id, role: existingUser.role },
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            logger.info('Already-activated license login', { licenseKey, email: primaryContactEmail, username: existingUser.username });
+
+            return res.json({
+                success: true,
+                alreadyActivated: true,
+                message: 'License already activated — logged in successfully!',
+                token,
+                username: existingUser.username,
+                user: {
+                    id: existingUser.id,
+                    username: existingUser.username,
+                    fullName: existingUser.full_name,
+                    role: existingUser.role,
+                    orgId: existingUser.org_id,
+                    org: org
+                },
+                license: {
+                    key: licenseKey.toUpperCase(),
+                    plan: license.license_type,
+                    status: license.status,
+                    expiresAt: license.expiry_date,
+                    activatedAt: license.activation_date
+                }
+            });
         }
         if (license.status === 'expired') {
             return res.status(400).json({ success: false, error: 'This license has expired' });
