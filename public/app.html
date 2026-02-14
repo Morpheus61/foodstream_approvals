@@ -477,9 +477,26 @@
                 if (token && savedUser) {
                     const parsedUser = JSON.parse(savedUser);
                     
-                    // Redirect admins directly to Admin Dashboard
+                    // For admins, validate token before redirecting
                     if (parsedUser.role === 'super_admin' || parsedUser.role === 'org_admin') {
-                        window.location.href = '/admin/';
+                        // Verify token is still valid
+                        fetch(`${API_BASE}/auth/me`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }).then(res => {
+                            if (res.ok) {
+                                window.location.href = '/admin/';
+                            } else {
+                                // Token expired — clear it, don't redirect
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('user');
+                                setUser(null);
+                            }
+                        }).catch(() => {
+                            // Network error — clear stale session
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            setUser(null);
+                        });
                         return;
                     }
                     

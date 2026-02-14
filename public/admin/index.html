@@ -346,9 +346,30 @@
                 return false;
             }
 
+            // Validate token is still valid with the server
+            try {
+                const authCheck = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!authCheck.ok) {
+                    // Token expired — clear everything before redirecting
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/app.html';
+                    return false;
+                }
+            } catch (e) {
+                // Network error — don't redirect, just show error
+                console.error('Auth check network error:', e);
+                document.getElementById('admin-currency').textContent = 'Connection error';
+                return false;
+            }
+
             // Check if user is super_admin or org_admin
             if (user.role !== 'super_admin' && user.role !== 'org_admin') {
                 alert('Access denied. Admin privileges required.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = '/app.html';
                 return false;
             }
@@ -370,8 +391,10 @@
                 });
                 
                 if (response.status === 401) {
-                    // Token expired — stop auto-refresh and redirect once
+                    // Token expired — stop auto-refresh, clear storage, redirect once
                     if (refreshInterval) clearInterval(refreshInterval);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     window.location.href = '/app.html';
                     return;
                 }

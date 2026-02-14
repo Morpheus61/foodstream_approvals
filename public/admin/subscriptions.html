@@ -319,6 +319,8 @@
                 });
 
                 if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     window.location.href = '/app.html';
                     return;
                 }
@@ -561,6 +563,8 @@
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             if (!token || (user.role !== 'super_admin' && user.role !== 'org_admin')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = '/app.html';
                 return false;
             }

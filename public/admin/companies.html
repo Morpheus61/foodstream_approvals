@@ -205,7 +205,12 @@
 
         function checkAdminAuth() {
             const token = localStorage.getItem('token');
-            if (!token) { window.location.href = '/app.html'; return false; }
+            if (!token) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/app.html';
+                return false;
+            }
             return true;
         }
 
@@ -247,7 +252,7 @@
                 const response = await fetch(`${API_BASE}/admin/organizations?limit=200`, {
                     headers: getAuthHeaders()
                 });
-                if (response.status === 401) { window.location.href = '/app.html'; return; }
+                if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/app.html'; return; }
                 const data = await response.json();
                 if (data.success) {
                     allCompanies = (data.organizations || []).map(org => ({
