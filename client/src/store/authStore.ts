@@ -41,6 +41,13 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        // Clear ALL auth storage across both systems
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('licenseKey');
+        localStorage.removeItem('trialActive');
+        localStorage.removeItem('userCurrency');
         set({
           user: null,
           token: null,

@@ -472,41 +472,43 @@
                 }
                 
                 // Check for existing user session
+                // Skip auto-login if ?logout param is present
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('logout')) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('licenseKey');
+                    localStorage.removeItem('trialActive');
+                    localStorage.removeItem('userCurrency');
+                    sessionStorage.removeItem('foodstream-auth');
+                    window.history.replaceState({}, '', '/app.html');
+                    return;
+                }
+
                 const token = localStorage.getItem('token');
                 const savedUser = localStorage.getItem('user');
                 if (token && savedUser) {
-                    const parsedUser = JSON.parse(savedUser);
-                    
-                    // For admins, validate token before redirecting
-                    if (parsedUser.role === 'super_admin' || parsedUser.role === 'org_admin') {
-                        // Verify token is still valid
-                        fetch(`${API_BASE}/auth/me`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        }).then(res => {
-                            if (res.ok) {
-                                window.location.href = '/admin/';
-                            } else {
-                                // Token expired — clear it, don't redirect
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('user');
-                                setUser(null);
-                            }
-                        }).catch(() => {
-                            // Network error — clear stale session
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
-                            setUser(null);
-                        });
-                        return;
+                    try {
+                        const parsedUser = JSON.parse(savedUser);
+                        setUser(parsedUser);
+                    } catch {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
                     }
-                    
-                    setUser(parsedUser);
                 }
             }, []);
             
             const handleLogout = () => {
+                // Clear ALL auth storage across both systems
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('licenseKey');
+                localStorage.removeItem('trialActive');
+                localStorage.removeItem('userCurrency');
+                sessionStorage.removeItem('foodstream-auth');
+                setLicenseActive(false);
                 setUser(null);
                 showToast('Logged out successfully', 'info');
             };

@@ -513,10 +513,15 @@
         }
 
         function logout() {
+            // Clear ALL auth storage across both systems
             localStorage.removeItem('adminToken');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/';
+            localStorage.removeItem('licenseKey');
+            localStorage.removeItem('trialActive');
+            localStorage.removeItem('userCurrency');
+            sessionStorage.removeItem('foodstream-auth');
+            window.location.href = '/app.html';
         }
 
         // Mobile sidebar toggle
