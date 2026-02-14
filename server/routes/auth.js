@@ -4,8 +4,29 @@ const jwt = require('jsonwebtoken');
 const { getSupabaseClient } = require('../config/database');
 const encryptionUtil = require('../utils/encryption');
 const { authLimiter, otpLimiter } = require('../middleware/rateLimiter');
+const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const SMSService = require('../services/smsService');
+
+// GET /api/auth/me - Validate current session and return user info
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            user: {
+                id: req.user.id,
+                username: req.user.username,
+                fullName: req.user.full_name,
+                role: req.user.role,
+                orgId: req.user.org_id,
+                email: req.user.email
+            }
+        });
+    } catch (error) {
+        logger.error('Auth me error', { error: error.message });
+        res.status(500).json({ success: false, error: 'Failed to get user info' });
+    }
+});
 
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req, res) => {
