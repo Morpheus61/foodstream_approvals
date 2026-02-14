@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .sidebar {
-            transition: width 0.3s ease;
+            transition: transform 0.3s ease;
         }
         .sidebar-link {
             transition: all 0.2s ease;
@@ -35,12 +35,110 @@
         .stat-card.blue {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
+        /* Mobile hamburger button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 50;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-menu-btn span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: #374151;
+            margin: 4px auto;
+            transition: all 0.3s;
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9;
+        }
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 20;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+            main.flex-1 {
+                margin-left: 0 !important;
+                padding: 1rem !important;
+                padding-top: 4rem !important;
+            }
+            .flex.justify-between.items-center.mb-8 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .flex.items-center.space-x-4 {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .grid.grid-cols-2.md\:grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .stat-card p.text-3xl {
+                font-size: 1.5rem;
+            }
+            .grid.grid-cols-2.md\:grid-cols-4.gap-4 button {
+                padding: 0.75rem;
+            }
+            .grid.grid-cols-2.md\:grid-cols-4.gap-4 button p.font-medium {
+                font-size: 0.8rem;
+            }
+            .grid.grid-cols-2.md\:grid-cols-4.gap-4 button p.text-sm {
+                font-size: 0.7rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .grid.grid-cols-2.md\:grid-cols-4 {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 0.5rem !important;
+            }
+            .stat-card {
+                padding: 0.75rem !important;
+            }
+            .stat-card p.text-3xl {
+                font-size: 1.25rem;
+            }
+            .stat-card p.text-sm {
+                font-size: 0.65rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10">
+        <aside class="sidebar w-64 bg-white shadow-lg fixed h-full z-10" id="sidebar">
             <div class="p-6 border-b">
                 <div class="flex items-center space-x-2">
                     <img src="/images/logo.jpeg" alt="FoodStream" class="w-8 h-8 rounded">
@@ -393,6 +491,12 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/';
+        }
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('open');
         }
 
         // Initialize - with REAL authentication

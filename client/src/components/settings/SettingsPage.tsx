@@ -53,7 +53,7 @@ export default function SettingsPage() {
                 <Badge className="bg-green-600 text-white">Active</Badge>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-gray-600">Organization</Label>
                   <p className="font-semibold mt-1">{user.orgId || 'N/A'}</p>

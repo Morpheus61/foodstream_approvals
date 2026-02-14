@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { voucherService, companyService, payeeService } from '@/services/voucherService';
+import { voucherService } from '@/services/voucherService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -282,7 +282,7 @@ export default function VoucherList() {
           </DialogHeader>
           {selectedVoucher && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <Badge className={getStatusColor(selectedVoucher.status)} variant="secondary">

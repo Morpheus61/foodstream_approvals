@@ -7,7 +7,6 @@ import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils';
 import {
   Clock,
   CheckCircle2,
-  XCircle,
   DollarSign,
   FileText,
   TrendingUp,
@@ -96,30 +95,30 @@ export default function DashboardHome() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Welcome back, {user?.fullName?.split(' ')[0]}!
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-sm md:text-base text-gray-600 mt-1">
           Here's what's happening with your payment approvals today.
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className={stat.highlight ? 'ring-2 ring-purple-200' : ''}>
-              <CardContent className="p-6">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
-                    <p className={`text-2xl font-bold mt-1 ${stat.color}`}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm text-gray-600 truncate">{stat.title}</p>
+                    <p className={`text-lg md:text-2xl font-bold mt-1 ${stat.color} truncate`}>
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  <div className={`p-2 md:p-3 rounded-lg ${stat.bgColor} ml-2 flex-shrink-0`}>
+                    <Icon className={`w-4 h-4 md:w-6 md:h-6 ${stat.color}`} />
                   </div>
                 </div>
                 {stat.highlight && (
@@ -153,11 +152,11 @@ export default function DashboardHome() {
               {recentVouchers.map((voucher) => (
                 <div
                   key={voucher.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-2"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs sm:text-sm text-gray-500">
                         {voucher.voucherNumber}
                       </span>
                       <Badge className={getStatusColor(voucher.status)} variant="secondary">

@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { cn, getInitials, getRoleBadgeColor } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -28,6 +26,8 @@ interface SidebarProps {
   onViewChange: (view: ViewType) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  mobileOpen?: boolean;
+  isMobile?: boolean;
 }
 
 export default function Sidebar({
@@ -35,6 +35,8 @@ export default function Sidebar({
   onViewChange,
   collapsed,
   onToggleCollapse,
+  mobileOpen = false,
+  isMobile = false,
 }: SidebarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -65,13 +67,15 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-30 flex flex-col",
-        collapsed ? 'w-16' : 'w-64'
+        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 flex flex-col",
+        isMobile
+          ? cn('w-64', mobileOpen ? 'translate-x-0' : '-translate-x-full')
+          : (collapsed ? 'w-16' : 'w-64')
       )}
     >
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-lg flex items-center justify-center">
               <Receipt className="w-5 h-5 text-white" />
@@ -82,18 +86,20 @@ export default function Sidebar({
             </div>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleCollapse}
-          className={collapsed ? 'mx-auto' : ''}
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleCollapse}
+            className={collapsed ? 'mx-auto' : ''}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </Button>
+        )}
       </div>
 
       {/* User Profile */}

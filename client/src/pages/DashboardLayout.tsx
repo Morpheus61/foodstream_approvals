@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import Sidebar, { ViewType } from '@/components/layout/Sidebar';
 import DashboardHome from '@/components/dashboard/DashboardHome';
@@ -13,6 +13,29 @@ export default function DashboardLayout() {
   const { isAuthenticated, user } = useAuthStore();
   const [currentView, setCurrentView] = useState<ViewType>('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close mobile menu on view change
+  const handleViewChange = (view: ViewType) => {
+    setCurrentView(view);
+    if (isMobile) setMobileMenuOpen(false);
+  };
 
   // Redirect to login if not authenticated
   if (!isAuthenticated || !user) {
@@ -44,17 +67,44 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Mobile hamburger button */}
+      {isMobile && (
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="fixed top-3 left-3 z-50 bg-white rounded-lg p-2 shadow-md border border-gray-200"
+          aria-label="Toggle menu"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      )}
+
+      {/* Mobile overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       <Sidebar
         currentView={currentView}
-        onViewChange={setCurrentView}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onViewChange={handleViewChange}
+        collapsed={isMobile ? false : sidebarCollapsed}
+        onToggleCollapse={() => isMobile ? setMobileMenuOpen(false) : setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobileMenuOpen}
+        isMobile={isMobile}
       />
       
       <main
         className={cn(
-          "flex-1 p-6 transition-all duration-300",
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          "flex-1 transition-all duration-300",
+          isMobile ? 'ml-0 p-3 pt-14' : (sidebarCollapsed ? 'ml-16 p-6' : 'ml-64 p-6')
         )}
       >
         {renderView()}

@@ -14,6 +14,18 @@
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
+        @media (max-width: 480px) {
+            body { padding: 0.5rem; }
+            .card { padding: 1.25rem !important; border-radius: 12px; }
+            .card h1 { font-size: 1.5rem; }
+            .card input, .card select {
+                padding: 0.625rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            .card button[type="submit"] {
+                padding: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
