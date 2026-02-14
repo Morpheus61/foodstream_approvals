@@ -88,7 +88,17 @@ router.post('/start-trial', async (req, res) => {
                 details: healthError.details,
                 hint: healthError.hint
             });
-            return res.status(503).json({ success: false, error: 'Database connection error. Please try again later.' });
+            return res.status(503).json({
+                success: false,
+                error: 'Database connection error: ' + (healthError.message || healthError.code || 'Unknown'),
+                debug: {
+                    code: healthError.code,
+                    details: healthError.details,
+                    hint: healthError.hint,
+                    supabaseUrl: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 30) + '...' : 'NOT SET',
+                    serviceKey: process.env.SUPABASE_SERVICE_KEY ? 'SET (' + process.env.SUPABASE_SERVICE_KEY.substring(0, 20) + '...)' : 'NOT SET'
+                }
+            });
         }
 
         // Check duplicate email
@@ -566,8 +576,8 @@ router.get('/health', async (req, res) => {
         res.json({
             success: true,
             database: allAccessible ? 'connected' : 'partial',
-            supabaseUrl: process.env.SUPABASE_URL ? '✓ configured' : '✗ missing',
-            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ configured' : '✗ missing',
+            supabaseUrl: process.env.SUPABASE_URL || 'NOT SET',
+            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ set (role: service_role)' : '✗ NOT SET',
             tables: results
         });
 
@@ -577,8 +587,8 @@ router.get('/health', async (req, res) => {
             success: false,
             database: 'disconnected',
             error: error.message,
-            supabaseUrl: process.env.SUPABASE_URL ? '✓ configured' : '✗ missing',
-            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ configured' : '✗ missing'
+            supabaseUrl: process.env.SUPABASE_URL || 'NOT SET',
+            serviceKey: process.env.SUPABASE_SERVICE_KEY ? '✓ set' : '✗ NOT SET'
         });
     }
 });
