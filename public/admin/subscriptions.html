@@ -287,18 +287,6 @@
         let currentPage = 1;
         const perPage = 10;
 
-        // Sample data for demo
-        const sampleSubscriptions = [
-            { id: 1, company: 'ABC Corporation', email: 'admin@abc.com', plan: 'premium', amount: 1920, currency: 'HKD', status: 'active', nextBilling: '2026-03-05', country: 'HK' },
-            { id: 2, company: 'XYZ Limited', email: 'info@xyz.com', plan: 'basic', amount: 720, currency: 'HKD', status: 'active', nextBilling: '2026-03-01', country: 'HK' },
-            { id: 3, company: 'Tech Solutions India', email: 'contact@techsol.in', plan: 'premium', amount: 20428, currency: 'INR', status: 'active', nextBilling: '2026-03-10', country: 'IN' },
-            { id: 4, company: 'Demo Company', email: 'demo@example.com', plan: 'trial', amount: 0, currency: 'USD', status: 'trial', nextBilling: '2026-02-20', country: 'US' },
-            { id: 5, company: 'Global Enterprises', email: 'admin@global.co.uk', plan: 'enterprise', amount: 5000, currency: 'GBP', status: 'active', nextBilling: '2026-03-15', country: 'GB' },
-            { id: 6, company: 'Singapore Foods', email: 'hello@sgfoods.sg', plan: 'basic', amount: 124, currency: 'SGD', status: 'active', nextBilling: '2026-03-08', country: 'SG' },
-            { id: 7, company: 'Mumbai Merchants', email: 'sales@mumbai.in', plan: 'basic', amount: 7668, currency: 'INR', status: 'trial', nextBilling: '2026-02-28', country: 'IN' },
-            { id: 8, company: 'Expired Corp', email: 'old@expired.com', plan: 'basic', amount: 720, currency: 'HKD', status: 'expired', nextBilling: '-', country: 'HK' },
-        ];
-
         // Currency symbols
         const currencySymbols = {
             HKD: 'HK$', USD: '$', EUR: '€', GBP: '£', INR: '₹', SGD: 'S$', AED: 'AED', CNY: '¥'
@@ -320,22 +308,38 @@
         }
 
         async function loadSubscriptions() {
+            const tbody = document.getElementById('subscriptionsTable');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Loading subscriptions...</td></tr>';
             try {
-                // In production, fetch from API
-                // const response = await fetch(`${API_BASE}/admin/subscriptions`);
-                // const data = await response.json();
-                // allSubscriptions = data.subscriptions;
-                
-                // Using sample data for demo
-                allSubscriptions = sampleSubscriptions;
-                renderSubscriptions();
-                updateStats();
+                const response = await fetch(`${API_BASE}/admin/subscriptions`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/app.html';
+                    return;
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        allSubscriptions = data.subscriptions || [];
+                    } else {
+                        allSubscriptions = [];
+                    }
+                } else {
+                    console.error('Failed to load subscriptions');
+                    allSubscriptions = [];
+                }
             } catch (error) {
                 console.error('Failed to load subscriptions:', error);
-                allSubscriptions = sampleSubscriptions;
-                renderSubscriptions();
-                updateStats();
+                allSubscriptions = [];
             }
+            renderSubscriptions();
+            updateStats();
         }
 
         function renderSubscriptions() {
@@ -344,6 +348,13 @@
             const paginated = filtered.slice(start, start + perPage);
 
             const tbody = document.getElementById('subscriptionsTable');
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No subscriptions found</td></tr>';
+                document.getElementById('paginationInfo').textContent = 'No results';
+                return;
+            }
+
             tbody.innerHTML = paginated.map(sub => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4">
@@ -363,10 +374,10 @@
                     <td class="px-6 py-4 text-sm">${sub.nextBilling}</td>
                     <td class="px-6 py-4">
                         <div class="flex space-x-2">
-                            <button onclick="editSubscription(${sub.id})" class="text-indigo-600 hover:text-indigo-800">
+                            <button onclick="editSubscription('${sub.id}')" class="text-indigo-600 hover:text-indigo-800">
                                 <i data-lucide="edit-2" class="w-4 h-4"></i>
                             </button>
-                            <button onclick="viewDetails(${sub.id})" class="text-gray-600 hover:text-gray-800">
+                            <button onclick="viewDetails('${sub.id}')" class="text-gray-600 hover:text-gray-800">
                                 <i data-lucide="eye" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -411,18 +422,34 @@
         function updateStats() {
             const active = allSubscriptions.filter(s => s.status === 'active').length;
             const trials = allSubscriptions.filter(s => s.status === 'trial').length;
-            const revenue = allSubscriptions
-                .filter(s => s.status === 'active')
-                .reduce((sum, s) => sum + (s.currency === 'HKD' ? s.amount : s.amount * 0.1), 0); // Simplified conversion
+            const expired = allSubscriptions.filter(s => s.status === 'expired' || s.status === 'cancelled').length;
+            const total = allSubscriptions.length;
+            const churnRate = total > 0 ? ((expired / total) * 100).toFixed(1) : '0.0';
+
+            // Sum revenue per currency, display primary currency
+            const revenueByCurrency = {};
+            allSubscriptions.filter(s => s.status === 'active').forEach(s => {
+                if (s.amount > 0) {
+                    revenueByCurrency[s.currency] = (revenueByCurrency[s.currency] || 0) + s.amount;
+                }
+            });
+            const currencies = Object.keys(revenueByCurrency);
+            let revenueText = '--';
+            if (currencies.length === 1) {
+                revenueText = formatCurrency(revenueByCurrency[currencies[0]], currencies[0]);
+            } else if (currencies.length > 1) {
+                // Show the first currency + note
+                revenueText = currencies.map(c => formatCurrency(revenueByCurrency[c], c)).join(', ');
+            }
 
             document.getElementById('statActive').textContent = active;
             document.getElementById('statTrials').textContent = trials;
-            document.getElementById('statRevenue').textContent = `HK$ ${Math.round(revenue).toLocaleString()}`;
-            document.getElementById('statChurn').textContent = '2.3%';
+            document.getElementById('statRevenue').textContent = revenueText;
+            document.getElementById('statChurn').textContent = `${churnRate}%`;
         }
 
         function editSubscription(id) {
-            const sub = allSubscriptions.find(s => s.id === id);
+            const sub = allSubscriptions.find(s => String(s.id) === String(id));
             if (!sub) return;
 
             document.getElementById('editId').value = sub.id;
@@ -444,15 +471,50 @@
 
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            // Save changes - in production, send to API
-            alert('Changes saved successfully!');
-            closeEditModal();
-            loadSubscriptions();
+            const id = document.getElementById('editId').value;
+            const updates = {
+                plan: document.getElementById('editPlan').value,
+                status: document.getElementById('editStatus').value,
+                currency: document.getElementById('editCurrency').value,
+                customPrice: document.getElementById('editPrice').value || null
+            };
+            try {
+                const response = await fetch(`${API_BASE}/admin/subscriptions/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updates)
+                });
+                if (response.ok) {
+                    alert('Subscription updated successfully!');
+                    closeEditModal();
+                    loadSubscriptions();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Failed to update subscription');
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                alert('Failed to update subscription');
+            }
         });
 
         function viewDetails(id) {
-            // Navigate to detailed view
-            alert('View details for subscription #' + id);
+            const sub = allSubscriptions.find(s => String(s.id) === String(id));
+            if (!sub) return;
+            const details = [
+                `Company: ${sub.company}`,
+                `Email: ${sub.email}`,
+                `Plan: ${sub.plan}`,
+                `Status: ${sub.status}`,
+                `Amount: ${sub.amount > 0 ? formatCurrency(sub.amount, sub.currency) : 'Free'}`,
+                `Currency: ${sub.currency}`,
+                `Next Billing: ${sub.nextBilling || 'N/A'}`,
+                `Created: ${sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : 'N/A'}`
+            ].join('\n');
+            alert(details);
         }
 
         function prevPage() {
@@ -471,7 +533,22 @@
         }
 
         function showExportModal() {
-            alert('Export functionality - Download CSV/Excel of all subscriptions');
+            if (allSubscriptions.length === 0) {
+                alert('No subscriptions to export');
+                return;
+            }
+            const headers = ['Company', 'Email', 'Plan', 'Amount', 'Currency', 'Status', 'Next Billing'];
+            const rows = allSubscriptions.map(s => [
+                s.company, s.email, s.plan, s.amount, s.currency, s.status, s.nextBilling
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `subscriptions-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function toggleSidebar() {
@@ -479,8 +556,24 @@
             document.getElementById('sidebarOverlay').classList.toggle('open');
         }
 
+        // Check admin authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!token || (user.role !== 'super_admin' && user.role !== 'org_admin')) {
+                window.location.href = '/app.html';
+                return false;
+            }
+            return true;
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadSubscriptions);
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuthed = await checkAuth();
+            if (isAuthed) {
+                loadSubscriptions();
+            }
+        });
     </script>
 </body>
 </html>

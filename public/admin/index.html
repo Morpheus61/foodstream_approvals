@@ -25,6 +25,7 @@
         .stat-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
         .stat-card.green {
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
@@ -219,45 +220,45 @@
                 <div class="card stat-card p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-white/80 text-sm">Total Users</p>
+                            <p class="text-white text-sm font-medium">Total Users</p>
                             <p id="stat-users" class="text-3xl font-bold mt-1">--</p>
                         </div>
-                        <i data-lucide="users" class="w-10 h-10 opacity-50"></i>
+                        <i data-lucide="users" class="w-10 h-10 opacity-70"></i>
                     </div>
-                    <p class="text-white/70 text-sm mt-2">↑ 12% from last month</p>
+                    <p class="text-white/90 text-sm mt-2">↑ 12% from last month</p>
                 </div>
 
                 <div class="card stat-card green p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-white/80 text-sm">Active Subscriptions</p>
+                            <p class="text-white text-sm font-medium">Active Subscriptions</p>
                             <p id="stat-subscriptions" class="text-3xl font-bold mt-1">--</p>
                         </div>
-                        <i data-lucide="credit-card" class="w-10 h-10 opacity-50"></i>
+                        <i data-lucide="credit-card" class="w-10 h-10 opacity-70"></i>
                     </div>
-                    <p class="text-white/70 text-sm mt-2">↑ 8% from last month</p>
+                    <p class="text-white/90 text-sm mt-2">↑ 8% from last month</p>
                 </div>
 
                 <div class="card stat-card orange p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-white/80 text-sm">Monthly Revenue</p>
+                            <p class="text-white text-sm font-medium">Monthly Revenue</p>
                             <p id="stat-revenue" class="text-3xl font-bold mt-1">--</p>
                         </div>
-                        <i data-lucide="dollar-sign" class="w-10 h-10 opacity-50"></i>
+                        <i data-lucide="dollar-sign" class="w-10 h-10 opacity-70"></i>
                     </div>
-                    <p class="text-white/70 text-sm mt-2">↑ 15% from last month</p>
+                    <p class="text-white/90 text-sm mt-2">↑ 15% from last month</p>
                 </div>
 
                 <div class="card stat-card blue p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-white/80 text-sm">Free Trials</p>
+                            <p class="text-white text-sm font-medium">Free Trials</p>
                             <p id="stat-trials" class="text-3xl font-bold mt-1">--</p>
                         </div>
-                        <i data-lucide="zap" class="w-10 h-10 opacity-50"></i>
+                        <i data-lucide="zap" class="w-10 h-10 opacity-70"></i>
                     </div>
-                    <p class="text-white/70 text-sm mt-2">24 converted this month</p>
+                    <p class="text-white/90 text-sm mt-2" id="stat-trials-converted">Loading...</p>
                 </div>
             </div>
 

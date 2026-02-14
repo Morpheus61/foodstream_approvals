@@ -107,6 +107,109 @@ router.get('/dashboard/stats', authenticate, authorize('super_admin', 'org_admin
 // RECENT SUBSCRIPTIONS - Real-time
 // =====================================================
 
+// GET /api/admin/subscriptions - Full list with filters
+router.get('/subscriptions', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+    try {
+        const supabase = getSupabaseClient();
+        const { status, plan, currency, search, page = 1, limit = 50 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        let query = supabase
+            .from('licenses')
+            .select(`
+                *,
+                licensed_orgs (
+                    org_name,
+                    org_slug,
+                    currency,
+                    country
+                )
+            `, { count: 'exact' })
+            .order('created_at', { ascending: false });
+
+        // Apply filters
+        if (status) {
+            query = query.eq('status', status);
+        }
+        if (plan) {
+            query = query.eq('license_type', plan);
+        }
+
+        const { data: subscriptions, error, count } = await query
+            .range(offset, offset + parseInt(limit) - 1);
+
+        if (error) throw error;
+
+        // Format and filter in JS for currency/search (as these span joined tables)
+        let formatted = (subscriptions || []).map(sub => ({
+            id: sub.id,
+            company: sub.licensed_orgs?.org_name || sub.licensee_company || sub.licensee_name || 'Unknown',
+            email: sub.licensee_email || '',
+            plan: sub.license_type || 'basic',
+            amount: sub.price_paid || 0,
+            currency: sub.licensed_orgs?.currency || sub.currency || 'HKD',
+            status: sub.status || 'active',
+            nextBilling: sub.expiry_date ? new Date(sub.expiry_date).toISOString().split('T')[0] : '-',
+            country: sub.licensed_orgs?.country || '',
+            createdAt: sub.created_at
+        }));
+
+        // Client-side filters for joined fields
+        if (currency) {
+            formatted = formatted.filter(s => s.currency === currency);
+        }
+        if (search) {
+            const q = search.toLowerCase();
+            formatted = formatted.filter(s =>
+                s.company.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+            );
+        }
+
+        res.json({ success: true, subscriptions: formatted, total: count || formatted.length });
+
+    } catch (error) {
+        logger.error('Subscriptions list error', { error: error.message });
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/admin/subscriptions/:id - Update subscription
+router.put('/subscriptions/:id', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+    try {
+        const supabase = getSupabaseClient();
+        const { id } = req.params;
+        const { plan, status, currency, customPrice } = req.body;
+
+        const updates = {};
+        if (plan) updates.license_type = plan;
+        if (status) updates.status = status;
+        if (customPrice !== undefined && customPrice !== null) updates.price_paid = parseFloat(customPrice);
+
+        const { data, error } = await supabase
+            .from('licenses')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // If currency changed, update the org
+        if (currency && data.org_id) {
+            await supabase
+                .from('licensed_orgs')
+                .update({ currency })
+                .eq('id', data.org_id);
+        }
+
+        res.json({ success: true, subscription: data });
+
+    } catch (error) {
+        logger.error('Update subscription error', { error: error.message });
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // GET /api/admin/subscriptions/recent
 router.get('/subscriptions/recent', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
     try {
