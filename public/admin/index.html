@@ -365,9 +365,9 @@
                 return false;
             }
 
-            // Check if user is super_admin or org_admin
-            if (user.role !== 'super_admin' && user.role !== 'org_admin') {
-                alert('Access denied. Admin privileges required.');
+            // Only platform super_admins (no orgId) can access the admin dashboard
+            if (user.role !== 'super_admin' || user.orgId) {
+                alert('Access denied. Platform admin privileges required.');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/app.html';

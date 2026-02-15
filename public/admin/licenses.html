@@ -311,9 +311,32 @@
             };
         }
 
-        function checkAdminAuth() {
+        async function checkAdminAuth() {
             const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
             if (!token) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/app.html';
+                return false;
+            }
+            // Validate token with server
+            try {
+                const authCheck = await fetch(`${API_BASE.replace('/admin', '/auth')}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!authCheck.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/app.html';
+                    return false;
+                }
+            } catch (e) {
+                console.error('Auth check failed:', e);
+            }
+            // Only platform super_admins (no orgId) can access admin dashboard
+            if (user.role !== 'super_admin' || user.orgId) {
+                alert('Access denied. Platform admin privileges required.');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/app.html';
@@ -349,7 +372,7 @@
         }
 
         async function loadLicenses() {
-            if (!checkAdminAuth()) return;
+            if (!await checkAdminAuth()) return;
             try {
                 const response = await fetch(`${API_BASE}/admin/licenses?limit=200`, {
                     headers: getAuthHeaders()

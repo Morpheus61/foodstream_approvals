@@ -286,6 +286,18 @@
         const API_BASE = '/api/pricing';
         const token = localStorage.getItem('token');
 
+        // Check admin auth
+        (function checkAdminAuth() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!token || user.role !== 'super_admin' || user.orgId) {
+                alert('Access denied. Platform admin privileges required.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/app.html';
+                return;
+            }
+        })();
+
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {

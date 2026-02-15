@@ -205,8 +205,8 @@
                             localStorage.setItem('licenseInfo', JSON.stringify(data.license));
                         }
                         
-                        // Redirect admins directly to Admin Dashboard
-                        if (data.user.role === 'super_admin' || data.user.role === 'org_admin') {
+                        // Only platform super_admins (no orgId) go to Admin Dashboard
+                        if (data.user.role === 'super_admin' && !data.user.orgId) {
                             showToast('Welcome Admin! Redirecting to Dashboard...', 'success');
                             window.location.href = '/admin/';
                         } else {
@@ -380,8 +380,8 @@
                             localStorage.setItem('licenseInfo', JSON.stringify(data.license));
                         }
                         
-                        // Redirect admins directly to Admin Dashboard
-                        if (data.user.role === 'super_admin' || data.user.role === 'org_admin') {
+                        // Only platform super_admins (no orgId) go to Admin Dashboard
+                        if (data.user.role === 'super_admin' && !data.user.orgId) {
                             showToast('Welcome Admin! Redirecting to Dashboard...', 'success');
                             window.location.href = '/admin/';
                         } else {
@@ -405,11 +405,11 @@
                         
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Username</label>
+                                <label className="block text-sm font-medium mb-1">Username or Email</label>
                                 <input
                                     type="text"
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter username"
+                                    placeholder="Enter username or email"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     required

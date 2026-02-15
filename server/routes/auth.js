@@ -86,15 +86,34 @@ router.post('/login', authLimiter, async (req, res) => {
         
         const supabase = getSupabaseClient();
         
-        // Simple query without join first
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*') 
-            .eq('username', username)
-            .eq('status', 'active')
-            .single();
+        // Allow login with either username or email
+        const isEmail = username.includes('@');
+        let user = null;
+
+        if (isEmail) {
+            // Try email lookup first
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', username.toLowerCase())
+                .eq('status', 'active')
+                .single();
+            user = data;
+        }
         
-        if (error || !user) {
+        if (!user) {
+            // Try username lookup (or fallback if email lookup failed)
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('status', 'active')
+                .single();
+            user = data;
+        }
+        
+        if (!user) {
+            logger.warn('Login failed: user not found', { username, isEmail });
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
         

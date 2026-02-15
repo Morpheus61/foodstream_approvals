@@ -344,6 +344,17 @@
          */
         async function loadPlanPrices() {
             const token = localStorage.getItem('token');
+
+            // Check admin auth
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!token || user.role !== 'super_admin' || user.orgId) {
+                alert('Access denied. Platform admin privileges required.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/app.html';
+                return;
+            }
+
             const endpoints = [
                 { url: '/api/pricing/admin/plans', needsAuth: true },
                 { url: '/api/pricing/plans', needsAuth: false }

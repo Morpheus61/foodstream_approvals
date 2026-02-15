@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 // =====================================================
 
 // GET /api/admin/dashboard/stats
-router.get('/dashboard/stats', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/dashboard/stats', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         
@@ -108,7 +108,7 @@ router.get('/dashboard/stats', authenticate, authorize('super_admin', 'org_admin
 // =====================================================
 
 // GET /api/admin/subscriptions - Full list with filters
-router.get('/subscriptions', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/subscriptions', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const { status, plan, currency, search, page = 1, limit = 50 } = req.query;
@@ -174,7 +174,7 @@ router.get('/subscriptions', authenticate, authorize('super_admin', 'org_admin')
 });
 
 // PUT /api/admin/subscriptions/:id - Update subscription
-router.put('/subscriptions/:id', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.put('/subscriptions/:id', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const { id } = req.params;
@@ -211,7 +211,7 @@ router.put('/subscriptions/:id', authenticate, authorize('super_admin', 'org_adm
 });
 
 // GET /api/admin/subscriptions/recent
-router.get('/subscriptions/recent', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/subscriptions/recent', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const limit = parseInt(req.query.limit) || 10;
@@ -255,7 +255,7 @@ router.get('/subscriptions/recent', authenticate, authorize('super_admin', 'org_
 // =====================================================
 
 // GET /api/admin/activity/recent
-router.get('/activity/recent', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/activity/recent', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const limit = parseInt(req.query.limit) || 10;
@@ -353,7 +353,7 @@ router.get('/activity/recent', authenticate, authorize('super_admin', 'org_admin
 // =====================================================
 
 // GET /api/admin/users
-router.get('/users', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/users', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const { page = 1, limit = 20, role, status, search } = req.query;
@@ -460,7 +460,7 @@ router.get('/licenses', authenticate, authorize('super_admin'), async (req, res)
 // =====================================================
 
 // GET /api/admin/companies
-router.get('/companies', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/companies', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
         const { page = 1, limit = 20, status } = req.query;
@@ -553,7 +553,7 @@ router.get('/organizations', authenticate, authorize('super_admin'), async (req,
 // =====================================================
 
 // GET /api/admin/vouchers/stats
-router.get('/vouchers/stats', authenticate, authorize('super_admin', 'org_admin'), async (req, res) => {
+router.get('/vouchers/stats', authenticate, authorize('super_admin'), async (req, res) => {
     try {
         const supabase = getSupabaseClient();
 

@@ -206,7 +206,7 @@ router.post('/start-trial', async (req, res) => {
                 email: email.toLowerCase(),
                 mobile: sanitizedMobile,
                 password_hash: passwordHash,
-                role: 'super_admin',
+                role: 'org_admin',
                 status: 'active'
             })
             .select().single();

@@ -626,7 +626,8 @@
         async function checkAuth() {
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            if (!token || (user.role !== 'super_admin' && user.role !== 'org_admin')) {
+            if (!token || user.role !== 'super_admin' || user.orgId) {
+                alert('Access denied. Platform admin privileges required.');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/app.html';
