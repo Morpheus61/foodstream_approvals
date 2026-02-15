@@ -4,46 +4,53 @@ const logger = require('../utils/logger');
 
 /**
  * License Verification Middleware
- * Validates license key and enforces usage limits
+ * Looks up license via the authenticated user's org_id (must run AFTER authenticate middleware).
+ * Falls back to x-license-key header for backward compatibility.
  */
 async function verifyLicense(req, res, next) {
     try {
-        // Extract license key from headers or session
-        const licenseKey = req.headers['x-license-key'] || 
-                          req.session?.licenseKey ||
-                          req.body?.licenseKey;
-        
-        if (!licenseKey) {
-            return res.status(401).json({ 
-                success: false,
-                error: 'License key required',
-                code: 'LICENSE_MISSING'
-            });
-        }
-        
-        // Format validation
-        if (!LicenseGenerator.validateFormat(licenseKey)) {
-            return res.status(400).json({ 
-                success: false,
-                error: 'Invalid license key format',
-                code: 'LICENSE_INVALID_FORMAT'
-            });
-        }
-        
         const supabase = getSupabaseClient();
-        
-        // Fetch license from database
-        const { data: license, error } = await supabase
-            .from('licenses')
-            .select('*')
-            .eq('license_key', licenseKey)
-            .single();
-        
-        if (error || !license) {
+        let license = null;
+
+        // PRIMARY: Look up license via authenticated user's org_id
+        if (req.user && req.user.org_id) {
+            const { data: org } = await supabase
+                .from('licensed_orgs')
+                .select('license_id')
+                .eq('id', req.user.org_id)
+                .single();
+
+            if (org && org.license_id) {
+                const { data: licData } = await supabase
+                    .from('licenses')
+                    .select('*')
+                    .eq('id', org.license_id)
+                    .single();
+                license = licData;
+            }
+        }
+
+        // FALLBACK: Try x-license-key header or session
+        if (!license) {
+            const licenseKey = req.headers['x-license-key'] ||
+                              req.session?.licenseKey ||
+                              req.body?.licenseKey;
+
+            if (licenseKey && LicenseGenerator.validateFormat(licenseKey)) {
+                const { data: licData } = await supabase
+                    .from('licenses')
+                    .select('*')
+                    .eq('license_key', licenseKey)
+                    .single();
+                license = licData;
+            }
+        }
+
+        if (!license) {
             await logVerification(null, 'invalid', req);
             return res.status(404).json({ 
                 success: false,
-                error: 'License not found',
+                error: 'No active license found for your organization',
                 code: 'LICENSE_NOT_FOUND'
             });
         }

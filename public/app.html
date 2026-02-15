@@ -5,638 +5,1221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="White-Label Payment Approval System - Multi-Tenant SAAS">
     <meta name="theme-color" content="#1e40af">
-    
     <title>FoodStream Approvals Flow - Payment Approval System</title>
-    
-    <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/images/favicon-96x96.png">
     <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-    
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Custom Styles -->
     <link rel="stylesheet" href="/css/custom.css">
-    
     <style>
-        :root {
-            --primary-color: #1e40af;
-            --secondary-color: #3b82f6;
-            --accent-color: #10b981;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        
-        .card {
-            background: white;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        :root { --primary: #1e40af; --secondary: #3b82f6; --accent: #10b981; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .spinner { border:3px solid #f3f3f3; border-top:3px solid var(--primary); border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .fade-in { animation:fadeIn .3s ease-in; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .sidebar-link { display:flex; align-items:center; gap:.75rem; padding:.625rem 1rem; border-radius:.5rem; font-size:.875rem; font-weight:500; color:#4b5563; transition:all .15s; }
+        .sidebar-link:hover { background:#eff6ff; color:#1e40af; }
+        .sidebar-link.active { background:#dbeafe; color:#1e40af; font-weight:600; }
+        .btn-primary { background:var(--primary); color:#fff; padding:.5rem 1.25rem; border-radius:.5rem; font-weight:600; font-size:.875rem; transition:all .15s; }
+        .btn-primary:hover { opacity:.9; }
+        .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+        .btn-outline { border:1px solid #d1d5db; color:#374151; padding:.5rem 1.25rem; border-radius:.5rem; font-weight:500; font-size:.875rem; transition:all .15s; }
+        .btn-outline:hover { background:#f9fafb; }
+        .btn-danger { background:#dc2626; color:#fff; padding:.5rem 1.25rem; border-radius:.5rem; font-weight:500; font-size:.875rem; }
+        .btn-danger:hover { background:#b91c1c; }
+        .btn-success { background:#059669; color:#fff; padding:.5rem 1.25rem; border-radius:.5rem; font-weight:500; font-size:.875rem; }
+        .badge { display:inline-flex; align-items:center; padding:.125rem .625rem; border-radius:9999px; font-size:.75rem; font-weight:500; }
+        .badge-yellow { background:#fef3c7; color:#92400e; }
+        .badge-green { background:#d1fae5; color:#065f46; }
+        .badge-red { background:#fee2e2; color:#991b1b; }
+        .badge-blue { background:#dbeafe; color:#1e40af; }
+        .badge-gray { background:#f3f4f6; color:#374151; }
+        .input { width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:.5rem; font-size:.875rem; outline:none; transition:border .15s; }
+        .input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+        select.input { appearance:auto; }
+        .card { background:#fff; border-radius:.75rem; border:1px solid #e5e7eb; }
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:.875rem; }
+        th { text-align:left; padding:.75rem 1rem; font-weight:600; color:#6b7280; border-bottom:1px solid #e5e7eb; background:#f9fafb; white-space:nowrap; }
+        td { padding:.75rem 1rem; border-bottom:1px solid #f3f4f6; }
+        tr:hover td { background:#f9fafb; }
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; z-index:50; }
+        .modal { background:#fff; border-radius:.75rem; padding:1.5rem; width:100%; max-width:32rem; max-height:90vh; overflow-y:auto; }
+        .stat-card { background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:1.25rem; }
+        .stat-card .value { font-size:1.75rem; font-weight:700; margin-top:.25rem; }
+        .usage-bar { height:.5rem; background:#e5e7eb; border-radius:9999px; overflow:hidden; }
+        .usage-fill { height:100%; border-radius:9999px; transition:width .5s; }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Loading Screen -->
     <div id="loading-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p class="text-gray-600">Loading...</p>
-        </div>
+        <div class="text-center"><div class="spinner mx-auto mb-4"></div><p class="text-gray-600">Loading...</p></div>
     </div>
-    
-    <!-- Main App Container -->
     <div id="root"></div>
-    
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-    
-    <!-- Main Application Script -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-2"></div>
+
     <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        // API Base URL
-        const API_BASE = window.location.origin + '/api';
-        
-        // Toast Notification
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `card fade-in ${
-                type === 'success' ? 'border-l-4 border-green-500' :
-                type === 'error' ? 'border-l-4 border-red-500' :
-                'border-l-4 border-blue-500'
-            }`;
-            toast.innerHTML = `<p class="font-medium">${message}</p>`;
-            toastContainer.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-        
-        // License Activation Component
-        function LicenseActivation({ onActivated, onAdminLogin }) {
-            const [licenseKey, setLicenseKey] = useState('');
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [loading, setLoading] = useState(false);
-            const [showAdminLogin, setShowAdminLogin] = useState(false);
-            
-            // Admin Login State
-            const [adminUsername, setAdminUsername] = useState('');
-            const [adminPassword, setAdminPassword] = useState('');
-            const [adminLoading, setAdminLoading] = useState(false);
-            
-            const handleActivate = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                
-                try {
-                    const response = await fetch(`${API_BASE}/onboarding/activate-license`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            licenseKey,
-                            primaryContactEmail: email,
-                            password
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        localStorage.setItem('licenseKey', licenseKey);
-                        
-                        if (data.alreadyActivated && data.token && data.user) {
-                            // License was already activated — server logged us in directly
-                            localStorage.setItem('token', data.token);
-                            localStorage.setItem('user', JSON.stringify(data.user));
-                            if (data.license) {
-                                localStorage.setItem('licenseInfo', JSON.stringify(data.license));
-                            }
-                            showToast(data.message || 'Logged in successfully!', 'success');
-                            
-                            // Redirect admins to admin dashboard
-                            if (data.user.role === 'super_admin' || data.user.role === 'org_admin') {
-                                window.location.href = '/admin/';
-                            } else {
-                                onAdminLogin(data.user);
-                            }
-                        } else {
-                            showToast('License activated successfully!', 'success');
-                            onActivated(licenseKey);
-                        }
-                    } else {
-                        showToast(data.error || 'Activation failed', 'error');
-                    }
-                } catch (error) {
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            const handleAdminLogin = async (e) => {
-                e.preventDefault();
-                setAdminLoading(true);
-                
-                try {
-                    const response = await fetch(`${API_BASE}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            username: adminUsername, 
-                            password: adminPassword 
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
+    const { useState, useEffect, useCallback, useRef } = React;
+    const API = window.location.origin + '/api';
+
+    // ── Helpers ────────────────────────────────────────────
+    function showToast(message, type='info') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        const border = type==='success'?'border-green-500':type==='error'?'border-red-500':'border-blue-500';
+        t.className = `bg-white rounded-lg shadow-lg border-l-4 ${border} p-3 fade-in max-w-sm`;
+        t.innerHTML = '<p class="text-sm font-medium">' + message + '</p>';
+        c.appendChild(t);
+        setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 3500);
+    }
+
+    function authHeaders() {
+        const token = localStorage.getItem('token');
+        return { 'Content-Type':'application/json', ...(token ? {'Authorization':'Bearer ' + token} : {}) };
+    }
+
+    async function api(path, opts={}) {
+        const res = await fetch(API + path, { headers: authHeaders(), ...opts });
+        if (res.status === 401) { localStorage.clear(); window.location.reload(); return; }
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Request failed');
+        return json;
+    }
+
+    function currency(n) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'HKD',minimumFractionDigits:0,maximumFractionDigits:2}).format(n||0); }
+    function shortDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '\u2014'; }
+    function statusBadge(s) {
+        const m = { pending_approval:'badge-yellow', approved:'badge-green', rejected:'badge-red', completed:'badge-blue', draft:'badge-gray', cancelled:'badge-gray', active:'badge-green', inactive:'badge-gray', suspended:'badge-red', blocked:'badge-red' };
+        return React.createElement('span', {className: 'badge ' + (m[s]||'badge-gray')}, (s||'').replace(/_/g,' '));
+    }
+
+    // ── Icons (simple SVG) ─────────────────────────────────
+    const Icons = {
+        dashboard: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'})),
+        vouchers: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'})),
+        create: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M12 4v16m8-8H4'})),
+        approve: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'})),
+        company: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'})),
+        payees: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'})),
+        users: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'})),
+        settings: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'}),React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z'})),
+        logout: React.createElement('svg',{className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1'})),
+        menu: React.createElement('svg',{className:'w-6 h-6',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M4 6h16M4 12h16M4 18h16'})),
+        close: React.createElement('svg',{className:'w-6 h-6',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M6 18L18 6M6 6l12 12'})),
+        search: React.createElement('svg',{className:'w-4 h-4',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'})),
+        edit: React.createElement('svg',{className:'w-4 h-4',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'})),
+        trash: React.createElement('svg',{className:'w-4 h-4',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'})),
+        refresh: React.createElement('svg',{className:'w-4 h-4',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'})),
+    };
+
+    // ── Reusable Modal ────────────────────────────────────
+    function Modal({ title, children, onClose }) {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal fade-in" onClick={function(e){e.stopPropagation();}}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold">{title}</h3>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">{Icons.close}</button>
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // ── Usage Meter ───────────────────────────────────────
+    function UsageMeter({ label, used, max, color }) {
+        var fillColor = color || 'bg-blue-500';
+        var pct = max > 0 ? Math.min((used/max)*100, 100) : 0;
+        var warn = pct >= 80;
+        return (
+            <div className="mb-3">
+                <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-600">{label}</span>
+                    <span className={warn ? 'text-amber-600 font-semibold' : 'text-gray-500'}>{used} / {max === -1 ? '\u221E' : max}</span>
+                </div>
+                <div className="usage-bar"><div className={'usage-fill ' + (warn ? 'bg-amber-500' : fillColor)} style={{width: pct + '%'}}></div></div>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  LICENSE ACTIVATION PAGE
+    // ══════════════════════════════════════════════════════
+    function LicenseActivation({ onActivated, onUserLogin }) {
+        const [licenseKey, setLicenseKey] = useState('');
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+        const [loading, setLoading] = useState(false);
+        const [showLogin, setShowLogin] = useState(false);
+        const [loginUser, setLoginUser] = useState('');
+        const [loginPass, setLoginPass] = useState('');
+        const [loginLoading, setLoginLoading] = useState(false);
+
+        var doLogin = async function(e) {
+            e.preventDefault();
+            setLoginLoading(true);
+            try {
+                var res = await fetch(API + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:loginUser, password:loginPass}) });
+                var data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    if (data.license) localStorage.setItem('licenseInfo', JSON.stringify(data.license));
+                    if (data.user.role==='super_admin' && !data.user.orgId) { window.location.href='/admin/'; return; }
+                    showToast('Login successful!','success');
+                    onUserLogin(data.user, data.license);
+                } else showToast(data.error||'Login failed','error');
+            } catch(err) { showToast('Network error','error'); }
+            finally { setLoginLoading(false); }
+        };
+
+        var doActivate = async function(e) {
+            e.preventDefault();
+            setLoading(true);
+            try {
+                var res = await fetch(API + '/onboarding/activate-license', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({licenseKey:licenseKey, primaryContactEmail:email, password:password}) });
+                var data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('licenseKey', licenseKey);
+                    if (data.alreadyActivated && data.token && data.user) {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        if (data.license) {
-                            localStorage.setItem('licenseInfo', JSON.stringify(data.license));
-                        }
-                        
-                        // Only platform super_admins (no orgId) go to Admin Dashboard
-                        if (data.user.role === 'super_admin' && !data.user.orgId) {
-                            showToast('Welcome Admin! Redirecting to Dashboard...', 'success');
-                            window.location.href = '/admin/';
-                        } else {
-                            showToast('Login successful!', 'success');
-                            localStorage.setItem('licenseKey', 'USER_LOGIN');
-                            onAdminLogin(data.user);
-                        }
-                    } else {
-                        showToast(data.error || 'Login failed', 'error');
-                    }
-                } catch (error) {
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    setAdminLoading(false);
-                }
-            };
-            
-            // Show Admin Login Form
-            if (showAdminLogin) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-4">
-                        <div className="card max-w-md w-full fade-in">
-                            <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-                            
-                            <form onSubmit={handleAdminLogin} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Username</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Enter username"
-                                        value={adminUsername}
-                                        onChange={(e) => setAdminUsername(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Password</label>
-                                    <input
-                                        type="password"
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Enter password"
-                                        value={adminPassword}
-                                        onChange={(e) => setAdminPassword(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                
-                                <button 
-                                    type="submit" 
-                                    className="btn-primary w-full"
-                                    disabled={adminLoading}
-                                >
-                                    {adminLoading ? 'Logging in...' : 'Login'}
-                                </button>
-                            </form>
-                            
-                            <div className="mt-6 text-center">
-                                <button 
-                                    onClick={() => setShowAdminLogin(false)}
-                                    className="text-sm text-gray-600 hover:text-blue-600"
-                                >
-                                    ← Back to License Activation
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-            
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="card max-w-md w-full fade-in">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Activate Your License</h2>
-                        
-                        <form onSubmit={handleActivate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">License Key</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="PRM-XXXXX-XXXXX-XXXX-XXXX"
-                                    value={licenseKey}
-                                    onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
-                                    required
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="admin@company.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
+                        if (data.license) localStorage.setItem('licenseInfo', JSON.stringify(data.license));
+                        if (data.user.role==='super_admin' && !data.user.orgId) { window.location.href='/admin/'; return; }
+                        showToast('Logged in!','success');
+                        onUserLogin(data.user, data.license);
+                    } else { showToast('License activated!','success'); onActivated(licenseKey); }
+                } else showToast(data.error||'Activation failed','error');
+            } catch(err) { showToast('Network error','error'); }
+            finally { setLoading(false); }
+        };
 
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Password</label>
-                                <input
-                                    type="password"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Min 8 characters"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    minLength={8}
-                                    required
-                                />
-                            </div>
-                            
-                            <button 
-                                type="submit" 
-                                className="btn-primary w-full"
-                                disabled={loading}
-                            >
-                                {loading ? 'Activating...' : 'Activate License'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-6 pt-6 border-t text-center space-y-3">
-                            <button 
-                                onClick={() => { localStorage.setItem('licenseKey', 'activated'); onActivated('activated'); }}
-                                className="text-blue-600 hover:underline font-medium block w-full"
-                            >
-                                Already activated? Sign in →
-                            </button>
-                            <button 
-                                onClick={() => setShowAdminLogin(true)}
-                                className="text-gray-500 hover:text-blue-600 hover:underline text-sm block w-full"
-                            >
-                                Admin Login →
-                            </button>
+        if (showLogin) return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 fade-in">
+                    <div className="text-center mb-6">
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-                        
-                        <div className="mt-4 text-center text-sm text-gray-600">
-                            <p>Don't have a license key?</p>
-                            <a href="mailto:compliance@foodstream.co" className="text-blue-600 hover:underline">Contact Sales</a>
-                        </div>
+                        <h2 className="text-2xl font-bold">Welcome Back</h2>
+                        <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
+                    </div>
+                    <form onSubmit={doLogin} className="space-y-4">
+                        <div><label className="block text-sm font-medium mb-1">Username or Email</label><input className="input" placeholder="Enter username or email" value={loginUser} onChange={function(e){setLoginUser(e.target.value);}} required /></div>
+                        <div><label className="block text-sm font-medium mb-1">Password</label><input type="password" className="input" placeholder="Enter password" value={loginPass} onChange={function(e){setLoginPass(e.target.value);}} required /></div>
+                        <button type="submit" className="btn-primary w-full py-2.5" disabled={loginLoading}>{loginLoading?'Signing in...':'Sign In'}</button>
+                    </form>
+                    <div className="mt-6 pt-4 border-t text-center">
+                        <button onClick={function(){setShowLogin(false);}} className="text-sm text-gray-500 hover:text-blue-600">&larr; Back to License Activation</button>
                     </div>
                 </div>
-            );
-        }
-        
-        // Login Component
-        function Login({ onLogin }) {
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-            const [loading, setLoading] = useState(false);
-            
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                
+            </div>
+        );
+
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 fade-in">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold">Activate Your License</h2>
+                        <p className="text-gray-500 text-sm mt-1">Enter your license key to get started</p>
+                    </div>
+                    <form onSubmit={doActivate} className="space-y-4">
+                        <div><label className="block text-sm font-medium mb-1">License Key</label><input className="input" placeholder="PRM-XXXXX-XXXXX-XXXX-XXXX" value={licenseKey} onChange={function(e){setLicenseKey(e.target.value.toUpperCase());}} required /></div>
+                        <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="input" placeholder="admin@company.com" value={email} onChange={function(e){setEmail(e.target.value);}} required /></div>
+                        <div><label className="block text-sm font-medium mb-1">Password</label><input type="password" className="input" placeholder="Min 8 characters" value={password} onChange={function(e){setPassword(e.target.value);}} minLength={8} required /></div>
+                        <button type="submit" className="btn-primary w-full py-2.5" disabled={loading}>{loading?'Activating...':'Activate License'}</button>
+                    </form>
+                    <div className="mt-6 pt-4 border-t text-center space-y-2">
+                        <button onClick={function(){localStorage.setItem('licenseKey','activated');onActivated('activated');}} className="text-blue-600 hover:underline font-medium text-sm block w-full">Already activated? Sign in &rarr;</button>
+                        <button onClick={function(){setShowLogin(true);}} className="text-gray-500 hover:text-blue-600 text-sm block w-full">Admin Login &rarr;</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  LOGIN PAGE (after license activated)
+    // ══════════════════════════════════════════════════════
+    function LoginPage({ onLogin }) {
+        const [u, setU] = useState('');
+        const [p, setP] = useState('');
+        const [loading, setLoading] = useState(false);
+        var handle = async function(e) {
+            e.preventDefault(); setLoading(true);
+            try {
+                var res = await fetch(API + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) });
+                var data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('token',data.token); localStorage.setItem('user',JSON.stringify(data.user));
+                    if (data.license) localStorage.setItem('licenseInfo',JSON.stringify(data.license));
+                    if (data.user.role==='super_admin'&&!data.user.orgId) { window.location.href='/admin/'; return; }
+                    showToast('Login successful!','success');
+                    onLogin(data.user, data.license);
+                } else showToast(data.error||'Login failed','error');
+            } catch(err) { showToast('Network error','error'); }
+            finally { setLoading(false); }
+        };
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 fade-in">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold">Welcome Back</h2>
+                        <p className="text-gray-500 text-sm mt-1">Sign in to continue</p>
+                    </div>
+                    <form onSubmit={handle} className="space-y-4">
+                        <div><label className="block text-sm font-medium mb-1">Username or Email</label><input className="input" placeholder="Enter username or email" value={u} onChange={function(e){setU(e.target.value);}} required /></div>
+                        <div><label className="block text-sm font-medium mb-1">Password</label><input type="password" className="input" placeholder="Enter password" value={p} onChange={function(e){setP(e.target.value);}} required /></div>
+                        <button type="submit" className="btn-primary w-full py-2.5" disabled={loading}>{loading?'Signing in...':'Sign In'}</button>
+                    </form>
+                    <div className="mt-6 pt-4 border-t text-center">
+                        <button onClick={function(){localStorage.removeItem('licenseKey');window.location.reload();}} className="text-sm text-blue-600 hover:underline">&larr; Activate a License Key</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  DASHBOARD HOME
+    // ══════════════════════════════════════════════════════
+    function DashboardHome({ user, onNavigate }) {
+        const [stats, setStats] = useState(null);
+        const [loading, setLoading] = useState(true);
+        var load = useCallback(async function() {
+            setLoading(true);
+            try {
+                var res = await api('/reports/dashboard-stats');
+                setStats(res.data);
+            } catch (e) { showToast('Failed to load stats: '+e.message,'error'); }
+            finally { setLoading(false); }
+        }, []);
+        useEffect(function(){ load(); },[load]);
+
+        if (loading) return <div className="flex justify-center py-20"><div className="spinner"></div></div>;
+        if (!stats) return <div className="text-center py-20 text-gray-500">Failed to load dashboard</div>;
+
+        var lim = stats.limits || {};
+        return (
+            <div className="fade-in space-y-6">
+                <div className="flex items-center justify-between">
+                    <div><h2 className="text-2xl font-bold">Dashboard</h2><p className="text-gray-500 text-sm">Welcome back, {user.fullName || user.username}</p></div>
+                    <button onClick={load} className="btn-outline flex items-center gap-2">{Icons.refresh} Refresh</button>
+                </div>
+
+                {/* Plan Banner */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                            <p className="text-blue-200 text-xs uppercase tracking-wider font-semibold">Current Plan</p>
+                            <p className="text-2xl font-bold capitalize">{lim.planType || 'Trial'}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-blue-200 text-xs">Expires</p>
+                            <p className="font-semibold">{shortDate(lim.expiryDate)}</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div><p className="text-blue-200 text-xs">Companies</p><p className="font-bold">{stats.companiesCount} / {lim.maxCompanies===-1?'\u221E':lim.maxCompanies}</p></div>
+                        <div><p className="text-blue-200 text-xs">Users</p><p className="font-bold">{stats.usersCount} / {lim.maxUsers===-1?'\u221E':lim.maxUsers}</p></div>
+                        <div><p className="text-blue-200 text-xs">Vouchers/mo</p><p className="font-bold">{stats.monthlyVouchers} / {lim.maxVouchersPerMonth===-1?'\u221E':lim.maxVouchersPerMonth}</p></div>
+                        <div><p className="text-blue-200 text-xs">SMS Credits</p><p className="font-bold">{lim.smsCredits===-1?'Unlimited':lim.smsCredits}</p></div>
+                    </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="stat-card cursor-pointer hover:shadow-md" onClick={function(){onNavigate('approvals');}}>
+                        <p className="text-gray-500 text-xs font-medium">Pending Approval</p>
+                        <p className="value text-amber-600">{stats.pendingVouchers}</p>
+                    </div>
+                    <div className="stat-card">
+                        <p className="text-gray-500 text-xs font-medium">Approved Today</p>
+                        <p className="value text-green-600">{stats.approvedToday}</p>
+                    </div>
+                    <div className="stat-card">
+                        <p className="text-gray-500 text-xs font-medium">Pending Amount</p>
+                        <p className="value text-blue-600 text-xl">{currency(stats.totalPendingAmount)}</p>
+                    </div>
+                    <div className="stat-card">
+                        <p className="text-gray-500 text-xs font-medium">This Month</p>
+                        <p className="value text-indigo-600">{stats.monthlyVouchers}</p>
+                    </div>
+                </div>
+
+                {/* Usage Meters */}
+                <div className="card p-5">
+                    <h3 className="font-semibold mb-3">Plan Usage</h3>
+                    <UsageMeter label="Companies" used={stats.companiesCount} max={lim.maxCompanies} color="bg-blue-500" />
+                    <UsageMeter label="Users" used={stats.usersCount} max={lim.maxUsers} color="bg-indigo-500" />
+                    <UsageMeter label="Vouchers this month" used={stats.monthlyVouchers} max={lim.maxVouchersPerMonth} color="bg-emerald-500" />
+                </div>
+
+                {/* Recent Vouchers */}
+                <div className="card">
+                    <div className="p-5 border-b flex items-center justify-between">
+                        <h3 className="font-semibold">Recent Vouchers</h3>
+                        <button onClick={function(){onNavigate('vouchers');}} className="text-sm text-blue-600 hover:underline">View all &rarr;</button>
+                    </div>
+                    {stats.recentVouchers && stats.recentVouchers.length > 0 ? (
+                        <div className="table-wrap">
+                            <table>
+                                <thead><tr><th>Voucher #</th><th>Payee</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+                                <tbody>
+                                    {stats.recentVouchers.map(function(v){return (
+                                        <tr key={v.id}>
+                                            <td className="font-medium text-blue-600">{v.voucher_number}</td>
+                                            <td>{v.payee_name}</td>
+                                            <td className="font-medium">{currency(v.amount)}</td>
+                                            <td>{statusBadge(v.status)}</td>
+                                            <td className="text-gray-500">{shortDate(v.created_at)}</td>
+                                        </tr>
+                                    );})}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : <p className="p-5 text-gray-500 text-sm">No vouchers yet. Create your first voucher to get started.</p>}
+                </div>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  VOUCHER LIST
+    // ══════════════════════════════════════════════════════
+    function VoucherList({ user, onNavigate }) {
+        const [vouchers, setVouchers] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [filterStatus, setFilterStatus] = useState('');
+        const [searchText, setSearchText] = useState('');
+        const [pagination, setPagination] = useState({ page:1, total:0 });
+
+        var load = useCallback(async function() {
+            setLoading(true);
+            try {
+                var params = new URLSearchParams({ page:pagination.page, limit:20 });
+                if (filterStatus) params.set('status', filterStatus);
+                if (searchText) params.set('search', searchText);
+                var res = await api('/vouchers?' + params.toString());
+                setVouchers(res.data || []);
+                setPagination(function(p){return {...p, total:res.pagination ? res.pagination.total : 0};});
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setLoading(false); }
+        },[filterStatus, searchText, pagination.page]);
+        useEffect(function(){ load(); },[load]);
+
+        return (
+            <div className="fade-in space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Vouchers</h2>
+                    <button onClick={function(){onNavigate('create-voucher');}} className="btn-primary flex items-center gap-2">{Icons.create} New Voucher</button>
+                </div>
+                <div className="card p-4 flex flex-wrap gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <input className="input pl-9" placeholder="Search vouchers..." value={searchText} onChange={function(e){ setSearchText(e.target.value); setPagination(function(p){return {...p,page:1};}); }} />
+                        <span className="absolute left-3 top-2.5 text-gray-400">{Icons.search}</span>
+                    </div>
+                    <select className="input w-auto" value={filterStatus} onChange={function(e){ setFilterStatus(e.target.value); setPagination(function(p){return {...p,page:1};}); }}>
+                        <option value="">All Statuses</option>
+                        <option value="pending_approval">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="completed">Completed</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                    <button onClick={load} className="btn-outline">{Icons.refresh}</button>
+                </div>
+                <div className="card">
+                    {loading ? <div className="flex justify-center py-10"><div className="spinner"></div></div> : vouchers.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500"><p className="mb-2">No vouchers found</p><button onClick={function(){onNavigate('create-voucher');}} className="text-blue-600 hover:underline text-sm">Create your first voucher</button></div>
+                    ) : (
+                        <div className="table-wrap">
+                            <table>
+                                <thead><tr><th>Voucher #</th><th>Payee</th><th>Company</th><th>Amount</th><th>Mode</th><th>Status</th><th>Date</th></tr></thead>
+                                <tbody>
+                                    {vouchers.map(function(v){return (
+                                        <tr key={v.id}>
+                                            <td className="font-medium text-blue-600">{v.voucher_number}</td>
+                                            <td>{v.payee ? v.payee.name : v.payee_name}</td>
+                                            <td>{v.company ? v.company.name : '\u2014'}</td>
+                                            <td className="font-medium">{currency(v.amount)}</td>
+                                            <td className="capitalize">{(v.payment_mode||'').replace(/_/g,' ')}</td>
+                                            <td>{statusBadge(v.status)}</td>
+                                            <td className="text-gray-500">{shortDate(v.created_at)}</td>
+                                        </tr>
+                                    );})}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    {pagination.total > 20 && (
+                        <div className="p-4 border-t flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Page {pagination.page} of {Math.ceil(pagination.total/20)}</span>
+                            <div className="flex gap-2">
+                                <button disabled={pagination.page<=1} onClick={function(){setPagination(function(p){return {...p,page:p.page-1};});}} className="btn-outline">&larr; Prev</button>
+                                <button disabled={pagination.page>=Math.ceil(pagination.total/20)} onClick={function(){setPagination(function(p){return {...p,page:p.page+1};});}} className="btn-outline">Next &rarr;</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  CREATE VOUCHER
+    // ══════════════════════════════════════════════════════
+    function CreateVoucher({ user, onNavigate }) {
+        const [form, setForm] = useState({ company_id:'', payee_id:'', amount:'', payment_mode:'cash', head_of_account_id:'', description:'', remarks:'', upi_id:'', bank_account_number:'', cheque_number:'', cheque_date:'' });
+        const [companies, setCompanies] = useState([]);
+        const [payees, setPayees] = useState([]);
+        const [hoas, setHoas] = useState([]);
+        const [saving, setSaving] = useState(false);
+
+        useEffect(function(){
+            api('/companies').then(function(r){setCompanies(r.data||[]);}).catch(function(){});
+        },[]);
+
+        useEffect(function(){
+            if (form.company_id) {
+                api('/payees?company_id=' + form.company_id).then(function(r){setPayees(r.data||[]);}).catch(function(){});
+                api('/vouchers/heads-of-account?company_id=' + form.company_id).then(function(r){setHoas(r.data||[]);}).catch(function(){setHoas([]);});
+            } else { setPayees([]); setHoas([]); }
+        },[form.company_id]);
+
+        var set = function(k,v){setForm(function(f){var o={};o[k]=v;return Object.assign({},f,o);});};
+
+        var submit = async function(e) {
+            e.preventDefault(); setSaving(true);
+            try {
+                var body = {
+                    company_id:form.company_id, payee_id:form.payee_id, amount:parseFloat(form.amount),
+                    payment_mode:form.payment_mode, description:form.description
+                };
+                if (form.head_of_account_id) body.head_of_account_id = form.head_of_account_id;
+                if (form.remarks) body.remarks = form.remarks;
+                if (form.payment_mode==='upi') body.upi_id = form.upi_id;
+                if (form.payment_mode==='account_transfer') body.bank_account_number = form.bank_account_number;
+                if (form.payment_mode==='cheque') { body.cheque_number = form.cheque_number; body.cheque_date = form.cheque_date; }
+                await api('/vouchers', { method:'POST', body:JSON.stringify(body)});
+                showToast('Voucher created!','success');
+                onNavigate('vouchers');
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setSaving(false); }
+        };
+
+        return (
+            <div className="fade-in max-w-2xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6">Create Voucher</h2>
+                <form onSubmit={submit} className="card p-6 space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className="block text-sm font-medium mb-1">Company *</label>
+                            <select className="input" value={form.company_id} onChange={function(e){set('company_id',e.target.value);}} required>
+                                <option value="">Select company</option>
+                                {companies.map(function(c){return <option key={c.id} value={c.id}>{c.name}</option>;})}
+                            </select>
+                        </div>
+                        <div><label className="block text-sm font-medium mb-1">Payee *</label>
+                            <select className="input" value={form.payee_id} onChange={function(e){set('payee_id',e.target.value);}} required disabled={!form.company_id}>
+                                <option value="">Select payee</option>
+                                {payees.map(function(p){return <option key={p.id} value={p.id}>{p.name} ({p.mobile})</option>;})}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className="block text-sm font-medium mb-1">Amount *</label><input type="number" step="0.01" min="0.01" className="input" value={form.amount} onChange={function(e){set('amount',e.target.value);}} required /></div>
+                        <div><label className="block text-sm font-medium mb-1">Payment Mode *</label>
+                            <select className="input" value={form.payment_mode} onChange={function(e){set('payment_mode',e.target.value);}}>
+                                <option value="cash">Cash</option><option value="upi">UPI</option><option value="account_transfer">Account Transfer</option><option value="cheque">Cheque</option><option value="card">Card</option>
+                            </select>
+                        </div>
+                    </div>
+                    {form.payment_mode==='upi' && <div><label className="block text-sm font-medium mb-1">UPI ID</label><input className="input" value={form.upi_id} onChange={function(e){set('upi_id',e.target.value);}} placeholder="name@upi" /></div>}
+                    {form.payment_mode==='account_transfer' && <div><label className="block text-sm font-medium mb-1">Bank Account Number</label><input className="input" value={form.bank_account_number} onChange={function(e){set('bank_account_number',e.target.value);}} /></div>}
+                    {form.payment_mode==='cheque' && <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">Cheque Number</label><input className="input" value={form.cheque_number} onChange={function(e){set('cheque_number',e.target.value);}} /></div><div><label className="block text-sm font-medium mb-1">Cheque Date</label><input type="date" className="input" value={form.cheque_date} onChange={function(e){set('cheque_date',e.target.value);}} /></div></div>}
+                    {hoas.length > 0 && <div><label className="block text-sm font-medium mb-1">Head of Account</label><select className="input" value={form.head_of_account_id} onChange={function(e){set('head_of_account_id',e.target.value);}}><option value="">Select (optional)</option>{hoas.map(function(h){return <option key={h.id} value={h.id}>{h.code} - {h.name}</option>;})}</select></div>}
+                    <div><label className="block text-sm font-medium mb-1">Description *</label><textarea className="input" rows={3} value={form.description} onChange={function(e){set('description',e.target.value);}} required></textarea></div>
+                    <div><label className="block text-sm font-medium mb-1">Remarks</label><textarea className="input" rows={2} value={form.remarks} onChange={function(e){set('remarks',e.target.value);}}></textarea></div>
+                    <div className="flex gap-3 pt-2">
+                        <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving?'Creating...':'Create Voucher'}</button>
+                        <button type="button" className="btn-outline" onClick={function(){onNavigate('vouchers');}}>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  APPROVAL QUEUE
+    // ══════════════════════════════════════════════════════
+    function ApprovalQueue({ user }) {
+        const [vouchers, setVouchers] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [actionLoading, setActionLoading] = useState(null);
+        const [rejectModal, setRejectModal] = useState(null);
+        const [reason, setReason] = useState('');
+
+        var load = useCallback(async function() {
+            setLoading(true);
+            try { var r = await api('/vouchers?status=pending_approval&limit=100'); setVouchers(r.data||[]); }
+            catch(e) { showToast(e.message,'error'); }
+            finally { setLoading(false); }
+        },[]);
+        useEffect(function(){ load(); },[load]);
+
+        var doApprove = async function(id) {
+            setActionLoading(id);
+            try { await api('/vouchers/' + id + '/approve',{method:'POST'}); showToast('Voucher approved!','success'); load(); }
+            catch(e) { showToast(e.message,'error'); }
+            finally { setActionLoading(null); }
+        };
+
+        var doReject = async function() {
+            if (!reason.trim()) { showToast('Please provide a reason','error'); return; }
+            setActionLoading(rejectModal);
+            try { await api('/vouchers/' + rejectModal + '/reject',{method:'POST',body:JSON.stringify({rejection_reason:reason})}); showToast('Voucher rejected','success'); setRejectModal(null); setReason(''); load(); }
+            catch(e) { showToast(e.message,'error'); }
+            finally { setActionLoading(null); }
+        };
+
+        return (
+            <div className="fade-in space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Pending Approvals</h2>
+                    <button onClick={load} className="btn-outline flex items-center gap-2">{Icons.refresh} Refresh</button>
+                </div>
+                <div className="card">
+                    {loading ? <div className="flex justify-center py-10"><div className="spinner"></div></div> : vouchers.length===0 ? (
+                        <div className="text-center py-10 text-gray-500">
+                            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">{Icons.approve}</div>
+                            <p>All caught up! No pending approvals.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y">
+                            {vouchers.map(function(v){return (
+                                <div key={v.id} className="p-4 hover:bg-gray-50">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <span className="font-semibold text-blue-600">{v.voucher_number}</span>
+                                                {statusBadge(v.status)}
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-1">{v.description}</p>
+                                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                                                <span>Payee: <strong>{v.payee ? v.payee.name : v.payee_name}</strong></span>
+                                                <span>Company: <strong>{v.company ? v.company.name : '\u2014'}</strong></span>
+                                                <span>Mode: <strong className="capitalize">{(v.payment_mode||'').replace(/_/g,' ')}</strong></span>
+                                                <span>Date: {shortDate(v.created_at)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 ml-4">
+                                            <p className="text-xl font-bold">{currency(v.amount)}</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={function(){doApprove(v.id);}} disabled={actionLoading===v.id} className="btn-success text-xs px-3 py-1.5">&#10003; Approve</button>
+                                                <button onClick={function(){setRejectModal(v.id);}} disabled={actionLoading===v.id} className="btn-danger text-xs px-3 py-1.5">&#10005; Reject</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );})}
+                        </div>
+                    )}
+                </div>
+                {rejectModal && (
+                    <Modal title="Reject Voucher" onClose={function(){setRejectModal(null);setReason('');}}>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium mb-1">Reason for rejection *</label><textarea className="input" rows={3} value={reason} onChange={function(e){setReason(e.target.value);}} placeholder="Explain why this voucher is being rejected..."></textarea></div>
+                            <div className="flex gap-3">
+                                <button onClick={doReject} className="btn-danger flex-1" disabled={actionLoading}>Reject</button>
+                                <button onClick={function(){setRejectModal(null);setReason('');}} className="btn-outline">Cancel</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  COMPANIES PAGE
+    // ══════════════════════════════════════════════════════
+    function CompaniesPage({ user }) {
+        const [items, setItems] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [modal, setModal] = useState(null);
+        const [form, setForm] = useState({});
+        const [saving, setSaving] = useState(false);
+        const [limits, setLimits] = useState({});
+        var canEdit = ['org_admin','super_admin'].indexOf(user.role) >= 0;
+
+        var load = useCallback(async function() {
+            setLoading(true);
+            try { var r = await api('/companies'); setItems(r.data||[]); if (r.limits) setLimits(r.limits); }
+            catch(e) { showToast(e.message,'error'); }
+            finally { setLoading(false); }
+        },[]);
+        useEffect(function(){ load(); },[load]);
+
+        var openNew = function(){ setForm({name:'',legal_name:'',email:'',phone:'',city:'',country:'HK',status:'active'}); setModal('new'); };
+        var openEdit = function(c){ setForm(Object.assign({},c)); setModal('edit'); };
+
+        var save = async function() {
+            if (!form.name) { showToast('Company name is required','error'); return; }
+            setSaving(true);
+            try {
+                if (modal==='new') await api('/companies',{method:'POST',body:JSON.stringify(form)});
+                else await api('/companies/' + form.id,{method:'PUT',body:JSON.stringify(form)});
+                showToast(modal==='new'?'Company created!':'Company updated!','success');
+                setModal(null); load();
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setSaving(false); }
+        };
+
+        var remove = async function(id){
+            if (!confirm('Delete this company?')) return;
+            try { await api('/companies/' + id,{method:'DELETE'}); showToast('Company deleted','success'); load(); }
+            catch(e) { showToast(e.message,'error'); }
+        };
+
+        var set = function(k,v){setForm(function(f){var o={};o[k]=v;return Object.assign({},f,o);});};
+
+        return (
+            <div className="fade-in space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold">Companies</h2>
+                        {limits.max && <p className="text-sm text-gray-500">{limits.used||items.length} of {limits.max} companies used</p>}
+                    </div>
+                    {canEdit && <button onClick={openNew} className="btn-primary flex items-center gap-2">{Icons.create} Add Company</button>}
+                </div>
+                <div className="card">
+                    {loading ? <div className="flex justify-center py-10"><div className="spinner"></div></div> : items.length===0 ? (
+                        <div className="text-center py-10 text-gray-500"><p>No companies yet</p>{canEdit && <button onClick={openNew} className="text-blue-600 hover:underline text-sm mt-2">Add your first company</button>}</div>
+                    ) : (
+                        <div className="table-wrap"><table>
+                            <thead><tr><th>Name</th><th>Legal Name</th><th>City</th><th>Phone</th><th>Status</th>{canEdit && <th>Actions</th>}</tr></thead>
+                            <tbody>
+                                {items.map(function(c){return (
+                                    <tr key={c.id}>
+                                        <td className="font-medium">{c.name}</td>
+                                        <td className="text-gray-500">{c.legal_name||'\u2014'}</td>
+                                        <td>{c.city||'\u2014'}</td>
+                                        <td>{c.phone||'\u2014'}</td>
+                                        <td>{statusBadge(c.status)}</td>
+                                        {canEdit && <td>
+                                            <div className="flex gap-2">
+                                                <button onClick={function(){openEdit(c);}} className="text-blue-600 hover:text-blue-800">{Icons.edit}</button>
+                                                <button onClick={function(){remove(c.id);}} className="text-red-500 hover:text-red-700">{Icons.trash}</button>
+                                            </div>
+                                        </td>}
+                                    </tr>
+                                );})}
+                            </tbody>
+                        </table></div>
+                    )}
+                </div>
+                {modal && (
+                    <Modal title={modal==='new'?'Add Company':'Edit Company'} onClose={function(){setModal(null);}}>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium mb-1">Name *</label><input className="input" value={form.name||''} onChange={function(e){set('name',e.target.value);}} /></div>
+                            <div><label className="block text-sm font-medium mb-1">Legal Name</label><input className="input" value={form.legal_name||''} onChange={function(e){set('legal_name',e.target.value);}} /></div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="input" value={form.email||''} onChange={function(e){set('email',e.target.value);}} /></div>
+                                <div><label className="block text-sm font-medium mb-1">Phone</label><input className="input" value={form.phone||''} onChange={function(e){set('phone',e.target.value);}} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">City</label><input className="input" value={form.city||''} onChange={function(e){set('city',e.target.value);}} /></div>
+                                <div><label className="block text-sm font-medium mb-1">Country</label><input className="input" value={form.country||''} onChange={function(e){set('country',e.target.value);}} /></div>
+                            </div>
+                            {modal==='edit' && <div><label className="block text-sm font-medium mb-1">Status</label><select className="input" value={form.status} onChange={function(e){set('status',e.target.value);}}><option value="active">Active</option><option value="inactive">Inactive</option></select></div>}
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={save} className="btn-primary flex-1" disabled={saving}>{saving?'Saving...':'Save'}</button>
+                                <button onClick={function(){setModal(null);}} className="btn-outline">Cancel</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  PAYEES PAGE
+    // ══════════════════════════════════════════════════════
+    function PayeesPage({ user }) {
+        const [items, setItems] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [companies, setCompanies] = useState([]);
+        const [filterCo, setFilterCo] = useState('');
+        const [searchVal, setSearchVal] = useState('');
+        const [modal, setModal] = useState(null);
+        const [form, setForm] = useState({});
+        const [saving, setSaving] = useState(false);
+        var canEdit = ['org_admin','super_admin','company_admin'].indexOf(user.role) >= 0;
+
+        useEffect(function(){ api('/companies').then(function(r){setCompanies(r.data||[]);}).catch(function(){}); },[]);
+
+        var load = useCallback(async function(){
+            setLoading(true);
+            try {
+                var p = new URLSearchParams();
+                if (filterCo) p.set('company_id',filterCo);
+                if (searchVal) p.set('search',searchVal);
+                var r = await api('/payees?' + p.toString()); setItems(r.data||[]);
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setLoading(false); }
+        },[filterCo, searchVal]);
+        useEffect(function(){ load(); },[load]);
+
+        var openNew = function(){ setForm({company_id:filterCo||'',name:'',mobile:'',email:'',payee_type:'vendor',status:'active'}); setModal('new'); };
+        var openEdit = function(p){ setForm(Object.assign({},p)); setModal('edit'); };
+
+        var save = async function(){
+            if (!form.name||!form.mobile||!form.company_id) { showToast('Name, mobile, and company are required','error'); return; }
+            setSaving(true);
+            try {
+                if (modal==='new') await api('/payees',{method:'POST',body:JSON.stringify(form)});
+                else await api('/payees/' + form.id,{method:'PUT',body:JSON.stringify(form)});
+                showToast(modal==='new'?'Payee created!':'Payee updated!','success');
+                setModal(null); load();
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setSaving(false); }
+        };
+
+        var remove = async function(id){
+            if (!confirm('Delete this payee?')) return;
+            try { await api('/payees/' + id,{method:'DELETE'}); showToast('Payee deleted','success'); load(); }
+            catch(e) { showToast(e.message,'error'); }
+        };
+        var set = function(k,v){setForm(function(f){var o={};o[k]=v;return Object.assign({},f,o);});};
+
+        return (
+            <div className="fade-in space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Payees</h2>
+                    {canEdit && <button onClick={openNew} className="btn-primary flex items-center gap-2">{Icons.create} Add Payee</button>}
+                </div>
+                <div className="card p-4 flex flex-wrap gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <input className="input pl-9" placeholder="Search payees..." value={searchVal} onChange={function(e){setSearchVal(e.target.value);}} />
+                        <span className="absolute left-3 top-2.5 text-gray-400">{Icons.search}</span>
+                    </div>
+                    <select className="input w-auto" value={filterCo} onChange={function(e){setFilterCo(e.target.value);}}>
+                        <option value="">All Companies</option>
+                        {companies.map(function(c){return <option key={c.id} value={c.id}>{c.name}</option>;})}
+                    </select>
+                </div>
+                <div className="card">
+                    {loading ? <div className="flex justify-center py-10"><div className="spinner"></div></div> : items.length===0 ? (
+                        <div className="text-center py-10 text-gray-500"><p>No payees found</p>{canEdit && <button onClick={openNew} className="text-blue-600 hover:underline text-sm mt-2">Add your first payee</button>}</div>
+                    ) : (
+                        <div className="table-wrap"><table>
+                            <thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>Type</th><th>Company</th><th>Status</th>{canEdit && <th>Actions</th>}</tr></thead>
+                            <tbody>
+                                {items.map(function(p){return (
+                                    <tr key={p.id}>
+                                        <td className="font-medium">{p.name}</td>
+                                        <td>{p.mobile}</td>
+                                        <td className="text-gray-500">{p.email||'\u2014'}</td>
+                                        <td className="capitalize">{p.payee_type||'\u2014'}</td>
+                                        <td>{p.companies ? p.companies.name : '\u2014'}</td>
+                                        <td>{statusBadge(p.status)}</td>
+                                        {canEdit && <td>
+                                            <div className="flex gap-2">
+                                                <button onClick={function(){openEdit(p);}} className="text-blue-600 hover:text-blue-800">{Icons.edit}</button>
+                                                <button onClick={function(){remove(p.id);}} className="text-red-500 hover:text-red-700">{Icons.trash}</button>
+                                            </div>
+                                        </td>}
+                                    </tr>
+                                );})}
+                            </tbody>
+                        </table></div>
+                    )}
+                </div>
+                {modal && (
+                    <Modal title={modal==='new'?'Add Payee':'Edit Payee'} onClose={function(){setModal(null);}}>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium mb-1">Company *</label>
+                                <select className="input" value={form.company_id||''} onChange={function(e){set('company_id',e.target.value);}} required>
+                                    <option value="">Select company</option>
+                                    {companies.map(function(c){return <option key={c.id} value={c.id}>{c.name}</option>;})}
+                                </select>
+                            </div>
+                            <div><label className="block text-sm font-medium mb-1">Name *</label><input className="input" value={form.name||''} onChange={function(e){set('name',e.target.value);}} /></div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">Mobile *</label><input className="input" value={form.mobile||''} onChange={function(e){set('mobile',e.target.value);}} /></div>
+                                <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="input" value={form.email||''} onChange={function(e){set('email',e.target.value);}} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">Type</label>
+                                    <select className="input" value={form.payee_type||'vendor'} onChange={function(e){set('payee_type',e.target.value);}}>
+                                        <option value="vendor">Vendor</option><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="supplier">Supplier</option><option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div><label className="block text-sm font-medium mb-1">UPI ID</label><input className="input" value={form.upi_id||''} onChange={function(e){set('upi_id',e.target.value);}} /></div>
+                            </div>
+                            <div><label className="block text-sm font-medium mb-1">Address</label><textarea className="input" rows={2} value={form.address||''} onChange={function(e){set('address',e.target.value);}}></textarea></div>
+                            {modal==='edit' && <div><label className="block text-sm font-medium mb-1">Status</label><select className="input" value={form.status||'active'} onChange={function(e){set('status',e.target.value);}}><option value="active">Active</option><option value="inactive">Inactive</option><option value="blocked">Blocked</option></select></div>}
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={save} className="btn-primary flex-1" disabled={saving}>{saving?'Saving...':'Save'}</button>
+                                <button onClick={function(){setModal(null);}} className="btn-outline">Cancel</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  USERS PAGE
+    // ══════════════════════════════════════════════════════
+    function UsersPage({ user }) {
+        const [items, setItems] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [companies, setCompanies] = useState([]);
+        const [modal, setModal] = useState(null);
+        const [form, setForm] = useState({});
+        const [saving, setSaving] = useState(false);
+        const [limits, setLimits] = useState({});
+        var canEdit = ['org_admin','super_admin'].indexOf(user.role) >= 0;
+
+        useEffect(function(){ api('/companies').then(function(r){setCompanies(r.data||[]);}).catch(function(){}); },[]);
+
+        var load = useCallback(async function(){
+            setLoading(true);
+            try { var r = await api('/users'); setItems(r.data||[]); if(r.limits) setLimits(r.limits); }
+            catch(e) { showToast(e.message,'error'); }
+            finally { setLoading(false); }
+        },[]);
+        useEffect(function(){ load(); },[load]);
+
+        var openNew = function(){ setForm({username:'',full_name:'',email:'',mobile:'',password:'',role:'accounts',company_id:''}); setModal('new'); };
+        var openEdit = function(u){ setForm(Object.assign({},u,{password:''})); setModal('edit'); };
+
+        var save = async function(){
+            if (modal==='new' && (!form.username||!form.full_name||!form.mobile||!form.password)) { showToast('Username, name, mobile, and password are required','error'); return; }
+            setSaving(true);
+            try {
+                var payload = Object.assign({},form);
+                if (modal==='edit' && !payload.password) delete payload.password;
+                if (modal==='new') await api('/users',{method:'POST',body:JSON.stringify(payload)});
+                else await api('/users/' + form.id,{method:'PUT',body:JSON.stringify(payload)});
+                showToast(modal==='new'?'User created!':'User updated!','success');
+                setModal(null); load();
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setSaving(false); }
+        };
+
+        var remove = async function(id){
+            if (!confirm('Deactivate this user?')) return;
+            try { await api('/users/' + id,{method:'DELETE'}); showToast('User deactivated','success'); load(); }
+            catch(e) { showToast(e.message,'error'); }
+        };
+        var set = function(k,v){setForm(function(f){var o={};o[k]=v;return Object.assign({},f,o);});};
+
+        var roleColors = { org_admin:'badge-blue', company_admin:'badge-blue', approver:'badge-yellow', accounts:'badge-green', viewer:'badge-gray' };
+
+        return (
+            <div className="fade-in space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold">Users</h2>
+                        {limits.max && <p className="text-sm text-gray-500">{limits.used||items.length} of {limits.max} users</p>}
+                    </div>
+                    {canEdit && <button onClick={openNew} className="btn-primary flex items-center gap-2">{Icons.create} Add User</button>}
+                </div>
+                <div className="card">
+                    {loading ? <div className="flex justify-center py-10"><div className="spinner"></div></div> : items.length===0 ? (
+                        <div className="text-center py-10 text-gray-500"><p>No users found</p></div>
+                    ) : (
+                        <div className="table-wrap"><table>
+                            <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Mobile</th><th>Role</th><th>Status</th><th>Last Login</th>{canEdit && <th>Actions</th>}</tr></thead>
+                            <tbody>
+                                {items.map(function(u){return (
+                                    <tr key={u.id}>
+                                        <td className="font-medium">{u.full_name}</td>
+                                        <td>{u.username}</td>
+                                        <td className="text-gray-500">{u.email||'\u2014'}</td>
+                                        <td>{u.mobile}</td>
+                                        <td><span className={'badge ' + (roleColors[u.role]||'badge-gray')}>{u.role.replace(/_/g,' ')}</span></td>
+                                        <td>{statusBadge(u.status)}</td>
+                                        <td className="text-gray-500 text-xs">{u.last_login ? shortDate(u.last_login) : 'Never'}</td>
+                                        {canEdit && <td>
+                                            <div className="flex gap-2">
+                                                <button onClick={function(){openEdit(u);}} className="text-blue-600 hover:text-blue-800">{Icons.edit}</button>
+                                                {u.id !== user.id && <button onClick={function(){remove(u.id);}} className="text-red-500 hover:text-red-700">{Icons.trash}</button>}
+                                            </div>
+                                        </td>}
+                                    </tr>
+                                );})}
+                            </tbody>
+                        </table></div>
+                    )}
+                </div>
+                {modal && (
+                    <Modal title={modal==='new'?'Add User':'Edit User'} onClose={function(){setModal(null);}}>
+                        <div className="space-y-4">
+                            {modal==='new' && <div><label className="block text-sm font-medium mb-1">Username *</label><input className="input" value={form.username||''} onChange={function(e){set('username',e.target.value);}} /></div>}
+                            <div><label className="block text-sm font-medium mb-1">Full Name *</label><input className="input" value={form.full_name||''} onChange={function(e){set('full_name',e.target.value);}} /></div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="input" value={form.email||''} onChange={function(e){set('email',e.target.value);}} /></div>
+                                <div><label className="block text-sm font-medium mb-1">Mobile *</label><input className="input" value={form.mobile||''} onChange={function(e){set('mobile',e.target.value);}} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="block text-sm font-medium mb-1">Role *</label>
+                                    <select className="input" value={form.role||'accounts'} onChange={function(e){set('role',e.target.value);}}>
+                                        <option value="org_admin">Org Admin</option><option value="company_admin">Company Admin</option><option value="approver">Approver</option><option value="accounts">Accounts</option><option value="viewer">Viewer</option>
+                                    </select>
+                                </div>
+                                <div><label className="block text-sm font-medium mb-1">Company</label>
+                                    <select className="input" value={form.company_id||''} onChange={function(e){set('company_id',e.target.value);}}>
+                                        <option value="">All Companies</option>
+                                        {companies.map(function(c){return <option key={c.id} value={c.id}>{c.name}</option>;})}
+                                    </select>
+                                </div>
+                            </div>
+                            <div><label className="block text-sm font-medium mb-1">{modal==='new'?'Password *':'New Password (leave blank to keep)'}</label><input type="password" className="input" value={form.password||''} onChange={function(e){set('password',e.target.value);}} placeholder={modal==='edit'?'Leave blank to keep current':''} /></div>
+                            {modal==='edit' && <div><label className="block text-sm font-medium mb-1">Status</label><select className="input" value={form.status||'active'} onChange={function(e){set('status',e.target.value);}}><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div>}
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={save} className="btn-primary flex-1" disabled={saving}>{saving?'Saving...':'Save'}</button>
+                                <button onClick={function(){setModal(null);}} className="btn-outline">Cancel</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  SETTINGS PAGE
+    // ══════════════════════════════════════════════════════
+    function SettingsPage({ user, onLogout }) {
+        const [tab, setTab] = useState('profile');
+        const [profile, setProfile] = useState({ full_name: user.fullName||'', email: user.email||'', mobile: user.mobile||'' });
+        const [pw, setPw] = useState({ current:'', newPw:'', confirm:'' });
+        const [saving, setSaving] = useState(false);
+
+        var saveProfile = async function(){
+            setSaving(true);
+            try { showToast('Profile update coming soon','info'); }
+            finally { setSaving(false); }
+        };
+
+        var changePw = async function(){
+            if (pw.newPw !== pw.confirm) { showToast('Passwords do not match','error'); return; }
+            if (pw.newPw.length < 8) { showToast('Password must be at least 8 characters','error'); return; }
+            setSaving(true);
+            try {
+                await api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:pw.current,newPassword:pw.newPw})});
+                showToast('Password changed!','success');
+                setPw({current:'',newPw:'',confirm:''});
+            } catch(e) { showToast(e.message,'error'); }
+            finally { setSaving(false); }
+        };
+
+        var tabs = ['profile','security','account'];
+
+        return (
+            <div className="fade-in max-w-2xl mx-auto space-y-6">
+                <h2 className="text-2xl font-bold">Settings</h2>
+                <div className="flex gap-2 border-b">
+                    {tabs.map(function(t){return (
+                        <button key={t} onClick={function(){setTab(t);}} className={'px-4 py-2 text-sm font-medium border-b-2 ' + (tab===t?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700')}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
+                    );})}
+                </div>
+                {tab==='profile' && (
+                    <div className="card p-6 space-y-4">
+                        <h3 className="font-semibold">Profile Information</h3>
+                        <div><label className="block text-sm font-medium mb-1">Full Name</label><input className="input" value={profile.full_name} onChange={function(e){setProfile(function(p){return Object.assign({},p,{full_name:e.target.value});});}} /></div>
+                        <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" className="input" value={profile.email} onChange={function(e){setProfile(function(p){return Object.assign({},p,{email:e.target.value});});}} /></div>
+                        <div><label className="block text-sm font-medium mb-1">Mobile</label><input className="input" value={profile.mobile} onChange={function(e){setProfile(function(p){return Object.assign({},p,{mobile:e.target.value});});}} /></div>
+                        <div className="text-sm text-gray-500">Role: <span className="font-medium capitalize">{(user.role||'').replace(/_/g,' ')}</span></div>
+                        <button onClick={saveProfile} className="btn-primary" disabled={saving}>{saving?'Saving...':'Save Profile'}</button>
+                    </div>
+                )}
+                {tab==='security' && (
+                    <div className="card p-6 space-y-4">
+                        <h3 className="font-semibold">Change Password</h3>
+                        <div><label className="block text-sm font-medium mb-1">Current Password</label><input type="password" className="input" value={pw.current} onChange={function(e){setPw(function(p){return Object.assign({},p,{current:e.target.value});});}} /></div>
+                        <div><label className="block text-sm font-medium mb-1">New Password</label><input type="password" className="input" value={pw.newPw} onChange={function(e){setPw(function(p){return Object.assign({},p,{newPw:e.target.value});});}} /></div>
+                        <div><label className="block text-sm font-medium mb-1">Confirm New Password</label><input type="password" className="input" value={pw.confirm} onChange={function(e){setPw(function(p){return Object.assign({},p,{confirm:e.target.value});});}} /></div>
+                        <button onClick={changePw} className="btn-primary" disabled={saving}>{saving?'Changing...':'Change Password'}</button>
+                    </div>
+                )}
+                {tab==='account' && (
+                    <div className="card p-6 space-y-4">
+                        <h3 className="font-semibold">Account</h3>
+                        <div className="text-sm text-gray-600 space-y-1">
+                            <p>Username: <strong>{user.username}</strong></p>
+                            <p>Role: <strong className="capitalize">{(user.role||'').replace(/_/g,' ')}</strong></p>
+                            <p>Organization ID: <strong className="text-xs">{user.orgId||'\u2014'}</strong></p>
+                        </div>
+                        <hr />
+                        <button onClick={onLogout} className="btn-danger">Sign Out of Account</button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  SIDEBAR
+    // ══════════════════════════════════════════════════════
+    function Sidebar({ user, page, onNavigate, onLogout, open, onClose }) {
+        var role = user.role || '';
+        var canApprove = ['org_admin','super_admin','company_admin','approver'].indexOf(role) >= 0;
+        var canManageUsers = ['org_admin','super_admin'].indexOf(role) >= 0;
+
+        var navItems = [
+            { id:'dashboard', label:'Dashboard', icon:Icons.dashboard, show:true },
+            { id:'vouchers', label:'Vouchers', icon:Icons.vouchers, show:true },
+            { id:'create-voucher', label:'Create Voucher', icon:Icons.create, show:role !== 'viewer' },
+            { id:'approvals', label:'Approvals', icon:Icons.approve, show:canApprove },
+            { id:'companies', label:'Companies', icon:Icons.company, show:true },
+            { id:'payees', label:'Payees', icon:Icons.payees, show:true },
+            { id:'users', label:'Users', icon:Icons.users, show:canManageUsers },
+            { id:'settings', label:'Settings', icon:Icons.settings, show:true },
+        ];
+
+        var sidebarContent = (
+            <div className="flex flex-col h-full">
+                <div className="p-5 border-b">
+                    <h1 className="text-lg font-bold text-gray-800">Approvals Flow</h1>
+                    <p className="text-xs text-gray-500 mt-0.5">Payment Approval System</p>
+                </div>
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                    {navItems.filter(function(n){return n.show;}).map(function(n){return (
+                        <button key={n.id} onClick={function(){onNavigate(n.id);onClose();}} className={'sidebar-link w-full ' + (page===n.id?'active':'')}>
+                            {n.icon}<span>{n.label}</span>
+                        </button>
+                    );})}
+                </nav>
+                <div className="p-3 border-t">
+                    <div className="flex items-center gap-3 px-3 py-2 mb-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm">{(user.fullName||user.username||'U')[0].toUpperCase()}</div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{user.fullName||user.username}</p>
+                            <p className="text-xs text-gray-500 capitalize">{(role||'').replace(/_/g,' ')}</p>
+                        </div>
+                    </div>
+                    <button onClick={onLogout} className="sidebar-link w-full text-red-600 hover:bg-red-50 hover:text-red-700">{Icons.logout}<span>Sign Out</span></button>
+                </div>
+            </div>
+        );
+
+        return (
+            <React.Fragment>
+                {/* Desktop Sidebar */}
+                <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r z-30">
+                    {sidebarContent}
+                </aside>
+                {/* Mobile Sidebar Overlay */}
+                {open && (
+                    <div className="lg:hidden fixed inset-0 z-40">
+                        <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
+                        <aside className="relative w-72 max-w-[80%] h-full bg-white shadow-xl">
+                            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">{Icons.close}</button>
+                            {sidebarContent}
+                        </aside>
+                    </div>
+                )}
+            </React.Fragment>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  MAIN DASHBOARD LAYOUT
+    // ══════════════════════════════════════════════════════
+    function DashboardLayout({ user, licenseInfo, onLogout }) {
+        const [page, setPage] = useState('dashboard');
+        const [sidebarOpen, setSidebarOpen] = useState(false);
+
+        var renderPage = function() {
+            switch(page) {
+                case 'dashboard': return <DashboardHome user={user} onNavigate={setPage} />;
+                case 'vouchers': return <VoucherList user={user} onNavigate={setPage} />;
+                case 'create-voucher': return <CreateVoucher user={user} onNavigate={setPage} />;
+                case 'approvals': return <ApprovalQueue user={user} />;
+                case 'companies': return <CompaniesPage user={user} />;
+                case 'payees': return <PayeesPage user={user} />;
+                case 'users': return <UsersPage user={user} />;
+                case 'settings': return <SettingsPage user={user} onLogout={onLogout} />;
+                default: return <DashboardHome user={user} onNavigate={setPage} />;
+            }
+        };
+
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <Sidebar user={user} page={page} onNavigate={setPage} onLogout={onLogout} open={sidebarOpen} onClose={function(){setSidebarOpen(false);}} />
+                {/* Mobile Top Bar */}
+                <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+                    <button onClick={function(){setSidebarOpen(true);}} className="text-gray-600">{Icons.menu}</button>
+                    <h1 className="font-bold text-gray-800">Approvals Flow</h1>
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm">{(user.fullName||user.username||'U')[0].toUpperCase()}</div>
+                </div>
+                {/* Main Content */}
+                <main className="lg:ml-64 p-4 lg:p-8">{renderPage()}</main>
+            </div>
+        );
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  APP ROOT
+    // ══════════════════════════════════════════════════════
+    function App() {
+        const [licenseActive, setLicenseActive] = useState(false);
+        const [user, setUser] = useState(null);
+        const [licenseInfo, setLicenseInfo] = useState(null);
+
+        useEffect(function(){
+            document.getElementById('loading-screen').style.display = 'none';
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('logout')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.history.replaceState({}, '', '/app.html');
+                return;
+            }
+            if (localStorage.getItem('licenseKey')) setLicenseActive(true);
+            var token = localStorage.getItem('token');
+            var saved = localStorage.getItem('user');
+            if (token && saved) {
                 try {
-                    const response = await fetch(`${API_BASE}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        if (data.license) {
-                            localStorage.setItem('licenseInfo', JSON.stringify(data.license));
-                        }
-                        
-                        // Only platform super_admins (no orgId) go to Admin Dashboard
-                        if (data.user.role === 'super_admin' && !data.user.orgId) {
-                            showToast('Welcome Admin! Redirecting to Dashboard...', 'success');
-                            window.location.href = '/admin/';
-                        } else {
-                            showToast('Login successful!', 'success');
-                            onLogin(data.user, data.license);
-                        }
-                    } else {
-                        showToast(data.error || 'Login failed', 'error');
-                    }
-                } catch (error) {
-                    showToast('Network error. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="card max-w-md w-full fade-in">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
-                        
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Username or Email</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter username or email"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Password</label>
-                                <input
-                                    type="password"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            <button 
-                                type="submit" 
-                                className="btn-primary w-full"
-                                disabled={loading}
-                            >
-                                {loading ? 'Logging in...' : 'Login'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-6 pt-6 border-t text-center">
-                            <p className="text-sm text-gray-600 mb-2">Don't have an account yet?</p>
-                            <button 
-                                onClick={() => { localStorage.removeItem('licenseKey'); window.location.reload(); }}
-                                className="text-blue-600 hover:underline font-medium text-sm"
-                            >
-                                ← Activate a License Key
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-        
-        // License Validity Banner
-        function LicenseBanner({ license }) {
-            if (!license) return null;
-            
-            const expiryDate = license.expiresAt ? new Date(license.expiresAt) : null;
-            const now = new Date();
-            const daysLeft = expiryDate ? Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)) : null;
-            const isExpired = daysLeft !== null && daysLeft <= 0;
-            const isExpiringSoon = daysLeft !== null && daysLeft > 0 && daysLeft <= 30;
-            
-            const planLabel = (license.plan || 'unknown').charAt(0).toUpperCase() + (license.plan || 'unknown').slice(1);
-            const statusLabel = isExpired ? 'Expired' : (license.status || 'active').charAt(0).toUpperCase() + (license.status || 'active').slice(1);
-            const formattedExpiry = expiryDate ? expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
-            
-            let bgColor = 'bg-green-50 border-green-200 text-green-800';
-            let dotColor = 'bg-green-500';
-            if (isExpired) {
-                bgColor = 'bg-red-50 border-red-200 text-red-800';
-                dotColor = 'bg-red-500';
-            } else if (isExpiringSoon) {
-                bgColor = 'bg-amber-50 border-amber-200 text-amber-800';
-                dotColor = 'bg-amber-500';
+                    setUser(JSON.parse(saved));
+                    var li = localStorage.getItem('licenseInfo');
+                    if (li) setLicenseInfo(JSON.parse(li));
+                } catch(e) { localStorage.removeItem('token'); localStorage.removeItem('user'); }
             }
-            
-            return (
-                <div className={`${bgColor} border rounded-lg px-4 py-2 flex items-center justify-between text-sm`}>
-                    <div className="flex items-center space-x-3">
-                        <span className={`inline-block w-2 h-2 rounded-full ${dotColor}`}></span>
-                        <span className="font-semibold">{planLabel} Plan</span>
-                        <span className="text-xs opacity-75">|</span>
-                        <span>Status: {statusLabel}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        {daysLeft !== null && !isExpired && (
-                            <span className="font-medium">{daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining</span>
-                        )}
-                        <span className="text-xs opacity-75">|</span>
-                        <span>{isExpired ? 'Expired' : 'Expires'}: {formattedExpiry}</span>
-                    </div>
-                </div>
-            );
-        }
+        },[]);
 
-        // Main Dashboard
-        function Dashboard({ user, licenseInfo, onLogout }) {
-            return (
-                <div className="min-h-screen">
-                    <nav className="bg-white shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                            <h1 className="text-xl font-bold">Payment Approval System</h1>
-                            <div className="flex items-center space-x-4">
-                                <span className="text-sm text-gray-600">{user.fullName}</span>
-                                <button 
-                                    onClick={onLogout}
-                                    className="text-sm text-blue-600 hover:underline"
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </nav>
-                    
-                    <main className="max-w-7xl mx-auto px-4 py-8">
-                        <LicenseBanner license={licenseInfo} />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Pending Vouchers</h3>
-                                <p className="text-3xl font-bold text-blue-600">0</p>
-                            </div>
-                            
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Approved Today</h3>
-                                <p className="text-3xl font-bold text-green-600">0</p>
-                            </div>
-                            
-                            <div className="card">
-                                <h3 className="text-lg font-semibold mb-2">Total Amount</h3>
-                                <p className="text-3xl font-bold text-gray-800">₹0</p>
-                            </div>
-                        </div>
-                        
-                        <div className="mt-8 card">
-                            <h2 className="text-xl font-bold mb-4">Recent Vouchers</h2>
-                            <p className="text-gray-500">No vouchers found</p>
-                        </div>
-                    </main>
-                </div>
-            );
-        }
-        
-        // Main App Component
-        function App() {
-            const [licenseActive, setLicenseActive] = useState(false);
-            const [user, setUser] = useState(null);
-            const [licenseInfo, setLicenseInfo] = useState(null);
-            
-            useEffect(() => {
-                // Hide loading screen
-                document.getElementById('loading-screen').style.display = 'none';
-                
-                // Check for existing license
-                const license = localStorage.getItem('licenseKey');
-                if (license) {
-                    setLicenseActive(true);
-                }
-                
-                // Check for existing user session
-                // Skip auto-login if ?logout param is present
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.has('logout')) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('adminToken');
-                    localStorage.removeItem('licenseKey');
-                    localStorage.removeItem('trialActive');
-                    localStorage.removeItem('userCurrency');
-                    sessionStorage.removeItem('foodstream-auth');
-                    window.history.replaceState({}, '', '/app.html');
-                    return;
-                }
+        var handleLogout = function() {
+            localStorage.clear();
+            sessionStorage.clear();
+            setLicenseActive(false);
+            setUser(null);
+            setLicenseInfo(null);
+            showToast('Signed out','info');
+        };
 
-                const token = localStorage.getItem('token');
-                const savedUser = localStorage.getItem('user');
-                if (token && savedUser) {
-                    try {
-                        const parsedUser = JSON.parse(savedUser);
-                        setUser(parsedUser);
-                        const savedLicense = localStorage.getItem('licenseInfo');
-                        if (savedLicense) {
-                            setLicenseInfo(JSON.parse(savedLicense));
-                        }
-                    } catch {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                    }
-                }
-            }, []);
-            
-            const handleLogout = () => {
-                // Clear ALL auth storage across both systems
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('licenseKey');
-                localStorage.removeItem('licenseInfo');
-                localStorage.removeItem('trialActive');
-                localStorage.removeItem('userCurrency');
-                sessionStorage.removeItem('foodstream-auth');
-                setLicenseActive(false);
-                setUser(null);
-                showToast('Logged out successfully', 'info');
-            };
-            
-            if (!licenseActive) {
-                return <LicenseActivation 
-                    onActivated={() => setLicenseActive(true)} 
-                    onAdminLogin={(user) => {
-                        setLicenseActive(true);
-                        setUser(user);
-                    }}
-                />;
-            }
-            
-            if (!user) {
-                return <Login onLogin={(userData, license) => {
-                    setUser(userData);
-                    if (license) setLicenseInfo(license);
-                }} />;
-            }
-            
-            return <Dashboard user={user} licenseInfo={licenseInfo} onLogout={handleLogout} />;
-        }
-        
-        // Render App
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        if (!licenseActive) return React.createElement(LicenseActivation, {onActivated:function(){setLicenseActive(true);}, onUserLogin:function(u,l){setLicenseActive(true);setUser(u);if(l)setLicenseInfo(l);}});
+        if (!user) return React.createElement(LoginPage, {onLogin:function(u,l){setUser(u);if(l)setLicenseInfo(l);}});
+        return React.createElement(DashboardLayout, {user:user, licenseInfo:licenseInfo, onLogout:handleLogout});
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
     </script>
-    
-    <!-- Service Worker Registration -->
+
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker registration failed'));
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(){});
             });
         }
     </script>

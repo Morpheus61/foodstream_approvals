@@ -8,6 +8,35 @@ const SMSService = require('../services/smsService');
 const logger = require('../utils/logger');
 
 // =====================================================
+// HEADS OF ACCOUNT
+// =====================================================
+
+/**
+ * GET /api/vouchers/heads-of-account - List heads of account for a company
+ */
+router.get('/heads-of-account', authenticate, verifyLicense, async (req, res) => {
+    try {
+        const supabase = getSupabaseClient();
+        const { company_id } = req.query;
+        let query = supabase
+            .from('heads_of_account')
+            .select('id, code, name, category, status')
+            .eq('org_id', req.user.org_id)
+            .eq('status', 'active')
+            .order('code');
+        if (company_id) {
+            query = query.or(`company_id.eq.${company_id},company_id.is.null`);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        res.json({ success: true, data: data || [] });
+    } catch (error) {
+        logger.error('Failed to fetch heads of account', { error: error.message });
+        res.status(500).json({ success: false, error: 'Failed to fetch heads of account' });
+    }
+});
+
+// =====================================================
 // VOUCHER CRUD OPERATIONS
 // =====================================================
 
