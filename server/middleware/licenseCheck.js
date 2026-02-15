@@ -134,7 +134,7 @@ async function verifyLicense(req, res, next) {
             .select('*')
             .eq('license_id', license.id)
             .eq('month', currentMonth)
-            .single();
+            .maybeSingle();
         
         if (usage) {
             // Check voucher limit
@@ -176,8 +176,8 @@ async function verifyLicense(req, res, next) {
         req.licenseUsage = usage;
         
         // Store license key in session for future requests
-        if (req.session) {
-            req.session.licenseKey = licenseKey;
+        if (req.session && license.license_key) {
+            req.session.licenseKey = license.license_key;
         }
         
         logger.info('License verified successfully', {
