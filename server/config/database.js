@@ -25,11 +25,16 @@ function getSupabaseClient() {
     
     supabaseClient = createClient(supabaseUrl, supabaseKey, {
         auth: {
-            autoRefreshToken: true,
+            autoRefreshToken: false,
             persistSession: false
         },
         db: {
             schema: 'public'
+        },
+        global: {
+            headers: {
+                'x-supabase-role': 'service_role'
+            }
         }
     });
     

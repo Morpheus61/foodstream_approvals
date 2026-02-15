@@ -15,7 +15,7 @@ router.get('/', authenticate, verifyLicense, authorize('super_admin', 'org_admin
 
         let query = supabase
             .from('users')
-            .select('id, username, full_name, email, mobile, role, status, company_id, last_login, created_at, companies(name)', { count: 'exact' })
+            .select('id, username, full_name, email, mobile, role, status, company_id, last_login, created_at, companies!fk_users_company(name)', { count: 'exact' })
             .eq('org_id', req.user.org_id)
             .order('created_at', { ascending: false });
 

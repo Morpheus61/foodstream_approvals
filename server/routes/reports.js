@@ -30,7 +30,7 @@ router.get('/dashboard-stats', authenticate, verifyLicense, async (req, res) => 
             // Payees count
             supabase.from('payees').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'active'),
             // Recent vouchers
-            supabase.from('vouchers').select('id, voucher_number, amount, status, payment_mode, created_at, payee_name, companies(name)').eq('org_id', orgId).order('created_at', { ascending: false }).limit(10)
+            supabase.from('vouchers').select('id, voucher_number, amount, status, payment_mode, created_at, payee_name, company:companies(name)').eq('org_id', orgId).order('created_at', { ascending: false }).limit(10)
         ]);
 
         const totalPendingAmount = (totalPending.data || []).reduce((sum, v) => sum + parseFloat(v.amount || 0), 0);

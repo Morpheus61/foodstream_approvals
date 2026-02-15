@@ -14,7 +14,7 @@ router.get('/', authenticate, verifyLicense, async (req, res) => {
 
         let query = supabase
             .from('payees')
-            .select('*, companies(name)', { count: 'exact' })
+            .select('*, companies!company_id(name)', { count: 'exact' })
             .eq('org_id', req.user.org_id)
             .order('created_at', { ascending: false });
 
@@ -36,7 +36,7 @@ router.get('/', authenticate, verifyLicense, async (req, res) => {
 router.get('/:id', authenticate, verifyLicense, async (req, res) => {
     try {
         const supabase = getSupabaseClient();
-        const { data, error } = await supabase.from('payees').select('*, companies(name)').eq('id', req.params.id).eq('org_id', req.user.org_id).single();
+        const { data, error } = await supabase.from('payees').select('*, companies!company_id(name)').eq('id', req.params.id).eq('org_id', req.user.org_id).single();
         if (error || !data) return res.status(404).json({ success: false, error: 'Payee not found' });
         res.json({ success: true, data });
     } catch (error) {
