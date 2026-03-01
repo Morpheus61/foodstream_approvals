@@ -9,6 +9,16 @@ const logger = require('../utils/logger');
  */
 async function verifyLicense(req, res, next) {
     try {
+        // Super admins manage the entire platform and are not tied to any
+        // single organization license — bypass all license checks for them.
+        if (req.user && req.user.role === 'super_admin') {
+            logger.info('License check bypassed for super_admin', {
+                userId: req.user.id,
+                username: req.user.username
+            });
+            return next();
+        }
+
         const supabase = getSupabaseClient();
         let license = null;
 
